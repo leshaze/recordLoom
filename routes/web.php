@@ -1,15 +1,20 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ArtistController;
+use App\Http\Controllers\LabelController;
+use App\Http\Controllers\RecordController;
+use App\Http\Controllers\PlatformController;
+use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
 
-Route::get('/dashboard', function () {
+
+/* Route::get('/dashboard', function () {
     return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard'); */
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -18,3 +23,18 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+Route::resource('dashboard', DashboardController::class);
+Route::get('/records/api/',[SearchController::class, 'getAutocomplete'])->name('autocomplete');
+Route::resource('artists', ArtistController::class);
+Route::resource('records', RecordController::class);
+Route::resource('platforms', PlatformController::class);
+Route::resource('login', ProfileController::class);
+//Route::resource('logout', LogoutController::class)->middleware('auth');
+Route::resource('labels', LabelController::class);
+//Route::resource('images', ImageController::class);
+
+
+Route::get('/record/{id}/delete',[RecordController::class, 'destroy'])->name('record.destroy');
+Route::get('/labels/{label}/print',[LabelController::class, 'print'])->name('labels.print');
+Route::get('/artists/{artist}/print',[ArtistController::class, 'print'])->name('artists.print');
