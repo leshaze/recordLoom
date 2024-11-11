@@ -1,5 +1,4 @@
 import 'bootstrap';
-
 /**
  * We'll load the axios HTTP library which allows us to easily issue requests
  * to our Laravel back-end. This library automatically handles sending the
@@ -11,6 +10,8 @@ window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
+import Chart from 'chart.js/auto';
+window.Chart = Chart;
 
 import $ from 'jquery';
 window.$ = window.jQuery = $;

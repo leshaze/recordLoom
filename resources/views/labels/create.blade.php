@@ -8,7 +8,12 @@
                     <div class="row p-2">
                         <div class="col-sm-2">
                             <label for="floatingInput">Label</label>
-                            <input type="text" class="form-control form-control-sm @error('name') border border-danger @enderror" name="label_name" id="label_name" placeholder="Label" value="{{ old('label_name') }}" required>
+                            <input type="text" class="form-control form-control-sm @error('name') border border-danger @enderror" name="label_name" id="label_name" placeholder="Label" value="{{ old('label_name') }}">
+                            @error('label_name')
+                            <span class="text-danger small">
+                                {{ $message }}
+                            </span>
+                            @enderror
                         </div>
                     </div>
                     <div class="row p-2">
@@ -17,12 +22,12 @@
                             <textarea class="form-control form-control-sm" placeholder="Beschreibung" name="description" id="description" style="height: 100px">{{ old('description') }}</textarea>
                         </div>
                     </div>
-                        <div class="p-2">
-                            <button style="min-width:70px; max-width:90px" type="submit" class="btn btn-success btn-sm">Submit</button>
-                        </div>
+                    <div class="p-2">
+                        <button style="min-width:70px; max-width:90px" type="submit" class="btn btn-success btn-sm">Submit</button>
                     </div>
-                </form>
             </div>
+            </form>
         </div>
+    </div>
     </div>
 </x-app-layout>

@@ -12,6 +12,7 @@
         "axios": "^1.7.4",
         "bootstrap": "^5.2.3",
         "bootstrap-icons": "^1.11.3",
+        "chart.js": "^4.4.6",
         "concurrently": "^9.0.1",
         "jquery": "^3.7.1",
         "jquery-ui": "^1.14.1",

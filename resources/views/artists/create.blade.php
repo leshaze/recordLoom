@@ -8,7 +8,12 @@
                     <div class="row p-2">
                         <div class="col-sm-2">
                             <label for="floatingInput">Künstler</label>
-                            <input type="text" class="form-control form-control-sm @error('name') border border-danger @enderror" name="artist_name" id="artist_name" placeholder="Künstler" value="{{ old('artist_name') }}" required>
+                            <input type="text" class="form-control form-control-sm @error('name') border border-danger @enderror" name="artist_name" id="artist_name" placeholder="Künstler" value="{{ old('artist_name') }}" >
+                            @error('artist_name')
+                            <span class="text-danger small">
+                                {{ $message }}
+                            </span>
+                            @enderror
                         </div>
                     </div>
                     <div class="row p-2">
