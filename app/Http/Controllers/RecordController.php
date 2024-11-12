@@ -348,4 +348,5 @@ class RecordController extends Controller
         $record->delete();
         return redirect()->route('records.index')->with('info', 'Record ' . $record->title . ' von ' . $record->artist->name . ' deleted successfully');
     }
+
 }

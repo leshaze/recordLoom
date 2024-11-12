@@ -7,6 +7,7 @@ use App\Http\Controllers\LabelController;
 use App\Http\Controllers\RecordController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\SearchController;
+use App\Models\Record;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
@@ -23,6 +24,9 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+Route::get('/records/print',[RecordController::class, 'print'])->name('records.print');
+Route::get('/artists/{artist}/print',[ArtistController::class, 'print'])->name('artists.print');
+Route::get('/labels/{label}/print',[LabelController::class, 'print'])->name('labels.print');
 
 Route::resource('dashboard', DashboardController::class);
 Route::get('/records/api/',[SearchController::class, 'getAutocomplete'])->name('autocomplete');

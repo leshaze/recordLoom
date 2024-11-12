@@ -5,6 +5,8 @@ use App\Models\Artist;
 use App\Models\Record;
 use App\Http\Requests\StoreArtistRequest;
 use App\Http\Requests\UpdateArtistRequest;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Carbon\Carbon;
 
 use Illuminate\Http\Request;
 
@@ -164,12 +166,18 @@ class ArtistController extends Controller
     {
         //Find the label        
         //Return view to detail artist
+        $current = Carbon::now();
+        $current = $current->format('d.m.Y');
 
         $records = Record::with(['artist'])->where('artist_id', '=', $artist->id)
             ->orderBy('name', 'ASC')
             ->get();
 
         $total_value = $records->sum('current_price');
-        return view('artists.print', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value]);
+         return Pdf::view('artists.print', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value])
+            ->format('a4')
+            ->landscape()
+            ->name($artist->name . '-' . $current . '.pdf')
+            ->download(); 
     }
 }

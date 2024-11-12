@@ -7,6 +7,8 @@ use App\Models\Label;
 use App\Models\Record;
 use App\Http\Requests\StoreLabelRequest;
 use App\Http\Requests\UpdateLabelRequest;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Carbon\Carbon;
 
 class LabelController extends Controller
 {
@@ -172,6 +174,8 @@ class LabelController extends Controller
         // $records = Record::where('label_id', '=' , $label->id)
         // ->orderBy('artists.name', 'asc')
         // ->get();
+        $current = Carbon::now();
+        $current = $current->format('d.m.Y');
 
         $records = Record::where('label_id', '=', $label->id)
             ->join('artists', 'records.artist_id', '=', 'artists.id')
@@ -179,6 +183,11 @@ class LabelController extends Controller
             ->orderBy('title', 'ASC')->get();
 
         $total_value = $records->sum('current_price');
-        return view('labels.print', ['label' => $label, 'records' => $records, 'total_value' => $total_value]);
+        $total_value = $records->sum('current_price');
+        return Pdf::view('labels.print', ['label' => $label, 'records' => $records, 'total_value' => $total_value])
+           ->format('a4')
+           ->landscape()
+           ->name($label->name . '-' . $current . '.pdf')
+           ->download();
     }
 }
