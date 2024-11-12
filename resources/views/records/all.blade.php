@@ -2,7 +2,7 @@
 <div class="container">
         <div class="wrapper">
             <div class="card table-responsive mx-auto">
-                <div class="card-header">{{ __('Records') }}</div><a class="btn btn-info btn-sm" href="{{ route('records.print')}}">Export</a></div>
+                <div class="card-header">{{ __('Records') }}</div>
                 @if (!empty($records) && $records->count())
                     <table class="table table-sm small">
                         <tr>
