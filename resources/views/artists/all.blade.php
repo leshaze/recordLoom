@@ -27,18 +27,18 @@
                 @if (!empty($artists) && $artists->count())
                 <table class="table table-sm small d-inline-flex">
                     <tr>
-                        <th style="min-width:100px;">Name</th>
-                        <th style="min-width:80px;">Summe LP</th>
-                        <th style="min-width:80px;">Summe CD</th>
-                        <th style="min-width:100px;">Description</th>
+                        <th>Name</th>
+                        <th>Summe LP</th>
+                        <th>Summe CD</th>
+                        <th>Description</th>
 
                     </tr>
                     @foreach ($artists as $artist)
                     <tr>
-                        <th align="left">
+                        <td align="left">
                             <a href="{{ route('artists.show', $artist->id) }}">{{ $artist->name }} </a>
-                        </th>
-                        <th style="text-align: center;">
+                        </td>
+                        <td style="text-align: center;">
                             @if ($records->where('artist_id', $artist->id)->where('kind', 'LP')->sum(function ($record) {
                             return $record->current_price;
                             }))
@@ -46,8 +46,8 @@
                                                 return $record->current_price;
                                         }) }} €
                             @endif
-                        </th>
-                        <th style="text-align: center;">
+                        </td>
+                        <td style="text-align: center;">
                             @if ($records->where('artist_id', $artist->id)->where('kind', 'CD')->sum(function ($record) {
                             return $record->current_price;
                             }))
@@ -55,12 +55,12 @@
                                                 return $record->current_price;
                                         }) }} €
                             @endif
-                        </th>
-                        <th>
+                        </td>
+                        <td>
                             @if ($artist->description)
                             {{ $artist->description }}
                             @endif
-                        </th>
+                        </td>
                     </tr>
                     @endforeach
                 </table>
