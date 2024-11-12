@@ -22,7 +22,7 @@ class RecordController extends Controller
         //     ->select('records.*')
         //     ->orderBy('artists.name', 'ASC')
         //     ->paginate(10);
-        $records = Record::paginate(10);
+        $records = Record::paginate(15);
 
         //dd($records);
         return view('records.all', ['records' => $records]);

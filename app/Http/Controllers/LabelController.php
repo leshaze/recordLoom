@@ -187,7 +187,6 @@ class LabelController extends Controller
         return Pdf::view('labels.print', ['label' => $label, 'records' => $records, 'total_value' => $total_value])
            ->format('a4')
            ->landscape()
-           ->name($label->name . '-' . $current . '.pdf')
-           ->download();
+           ->name($label->name . '-' . $current . '.pdf');
     }
 }

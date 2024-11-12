@@ -177,7 +177,6 @@ class ArtistController extends Controller
          return Pdf::view('artists.print', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value])
             ->format('a4')
             ->landscape()
-            ->name($artist->name . '-' . $current . '.pdf')
-            ->download(); 
+            ->name($artist->name . '-' . $current . '.pdf'); 
     }
 }

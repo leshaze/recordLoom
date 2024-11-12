@@ -14,7 +14,7 @@
                         </form>
                         </td>
                 </div>
-                <div class="position-absolute top-0 end-0"><a class="btn btn-info btn-sm" href="{{ route('artists.print', ['artist' => $artist->id]) }}">Export</a></div>
+                <div class="position-absolute top-0 end-0"><a class="btn btn-info btn-sm" href="{{ route('artists.print', ['artist' => $artist->id]) }}" target="_blank">Export</a></div>
             </div>
             <table class="table small xs">
                 <tr>
