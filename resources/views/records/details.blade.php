@@ -122,11 +122,12 @@
                     </div>
                 </div>
                 @endif
+                @if ($prices->count() >= '2')
                 <div class="row p-2">
                     <div class="col-sm-3">
-                        @if ($prices->count() >= '2')
+                        
                         <label for="price_history">Preisentwicklung in €</label><br>
-                        @endif
+                        
                         @foreach ($prices as $price)
                         {{ date('d.m.Y', strtotime($price->created_at)) }} - {{ $price->price }} € @if ($price->platform)
                         - <a href="{{ $price->platform->url }}" target="_blank">{{ $price->platform->name }}</a><br>
@@ -137,7 +138,7 @@
                         <canvas id="myChart"></canvas>
                     </div>
                 </div>
-
+                @endif    
             </div>
         </div>
     </div>
