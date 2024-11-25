@@ -5,7 +5,7 @@ use App\Models\Artist;
 use App\Models\Record;
 use App\Http\Requests\StoreArtistRequest;
 use App\Http\Requests\UpdateArtistRequest;
-use Spatie\LaravelPdf\Facades\Pdf;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
 use Illuminate\Http\Request;
@@ -174,9 +174,12 @@ class ArtistController extends Controller
             ->get();
 
         $total_value = $records->sum('current_price');
-         return Pdf::view('artists.print', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value])
+/*          return Pdf::view('artists.print', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value])
             ->format('a4')
             ->landscape()
-            ->name($artist->name . '-' . $current . '.pdf'); 
+            ->name($artist->name . '-' . $current . '.pdf');  */
+        $pdf = PDF::loadView('artists.print', ['artist' => $artist, 'records' => $records , 'total_value' => $total_value]);
+        return $pdf->stream($artist->name . '-' . $current . '.pdf');
+         
     }
 }

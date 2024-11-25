@@ -40,7 +40,7 @@
                         <td>{{ $record->grading_cover }}</td>
                         <td>{{ $record->grading_media }}</td>
                         <td>{{ $record->catalog_number }}</td>
-                        <td>{{ $record->current_price }} €</td>
+                        <td>@if($record->current_price) {{ $record->current_price}} € @endif</td>
                     </tr>
                     @endforeach
                 </table>

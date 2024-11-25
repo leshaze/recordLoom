@@ -7,7 +7,7 @@ use App\Models\Label;
 use App\Models\Record;
 use App\Http\Requests\StoreLabelRequest;
 use App\Http\Requests\UpdateLabelRequest;
-use Spatie\LaravelPdf\Facades\Pdf;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
 class LabelController extends Controller
@@ -57,7 +57,7 @@ class LabelController extends Controller
             $label->description = $request->input('description');
             $label->save(); //persist the data
 
-/*             //save the image 
+            /*             //save the image 
             if ($request->hasFile('file')) {
                 $files = $request->file('file');
                 foreach ($files as $file) {
@@ -89,7 +89,7 @@ class LabelController extends Controller
 
         $records = Record::with(['label'])->where('label_id', '=', $label->id)->get();
         $total_value = Record::where('label_id', '=', $label->id)->sum('current_price');
-       /*  $images = Image::where('reference', '=', 'label')
+        /*  $images = Image::where('reference', '=', 'label')
             ->where('reference_id', '=', $label->id)
             ->get(); */
         //dd($records);
@@ -183,10 +183,11 @@ class LabelController extends Controller
             ->orderBy('title', 'ASC')->get();
 
         $total_value = $records->sum('current_price');
-        $total_value = $records->sum('current_price');
-        return Pdf::view('labels.print', ['label' => $label, 'records' => $records, 'total_value' => $total_value])
-           ->format('a4')
-           ->landscape()
-           ->name($label->name . '-' . $current . '.pdf');
+/*         return Pdf::view('labels.print', ['label' => $label, 'records' => $records, 'total_value' => $total_value])
+            ->format('a4')
+            ->landscape()
+            ->name($label->name . '-' . $current . '.pdf'); */
+        $pdf = PDF::loadView('labels.print', ['label' => $label, 'records' => $records, 'total_value' => $total_value]);
+        return $pdf->stream($label->name . '-' . $current . '.pdf');
     }
 }

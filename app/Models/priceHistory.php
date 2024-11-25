@@ -9,6 +9,10 @@ class priceHistory extends Model
 {
     /** @use HasFactory<\Database\Factories\PriceHistoryFactory> */
     use HasFactory;
+    public function price()
+    {
+        return $this->belongsTo(Record::class);
+    }
 
     public function platform()
     {
