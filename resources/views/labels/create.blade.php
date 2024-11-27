@@ -6,7 +6,7 @@
                 <form action="{{ route('labels.store') }}" method="post" class="Label" enctype="multipart/form-data">
                     @csrf
                     <div class="row p-2">
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <label for="floatingInput">Label</label>
                             <input type="text" class="form-control form-control-sm @error('name') border border-danger @enderror" name="label_name" id="label_name" placeholder="Label" value="{{ old('label_name') }}">
                             @error('label_name')

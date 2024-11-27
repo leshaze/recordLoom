@@ -29,7 +29,7 @@
                         </div>
                     </div>
                     <div class="row p-2">
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <label for="floatingInput">Künstler</label>
                             @error('artist_name')
                             <span class="text-danger">
@@ -41,7 +41,7 @@
                                 autofocus="" value="{{ $record->artist->name }}" required>
                             <input type="hidden" name="artist_id" id="artist_id" value="{{ $record->artist_id }}">
                         </div>
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <label for="title">Titel</label>
                             @error('title')
                             <span class="text-danger">
@@ -53,7 +53,7 @@
                                 autofocus="" value="{{ $record->title }}">
                             <input type="hidden">
                         </div>
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <label for="label_name">Label</label>
                             @error('label_name')
                             <span class="text-danger">

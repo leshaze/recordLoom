@@ -20,7 +20,7 @@
                         </div>
                     </div>
                     <div class="row p-2">
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <label for="floatingInput">Künstler</label>
                             <input type="text" name="artist_name" id="artist_name"
                                 class="form-control form-control-sm @error('artist_name') border border-danger @enderror" placeholder="Künstler"
@@ -32,7 +32,7 @@
                             @enderror
                             <input type="hidden" name="artist_id" id="artist_id" value="{{ old('artist_id') }}">
                         </div>
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <label for="title">Titel</label>
                             <input type="text" name="title" id="title"
                                 class="form-control form-control-sm @error('title') border border-danger @enderror" placeholder="Titel"
@@ -44,7 +44,7 @@
                             @enderror
                             <input type="hidden">
                         </div>
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <label for="label_name">Label</label>
                             <input type="text" name="label_name" id="label_name"
                                 class="form-control form-control-sm @error('label_name') border border-danger @enderror" placeholder="Label"

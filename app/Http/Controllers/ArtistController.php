@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Artist;
 use App\Models\Record;
 use App\Http\Requests\StoreArtistRequest;
@@ -21,10 +22,16 @@ class ArtistController extends Controller
      */
     public function index()
     {
-        
+        $records = [];
         //Show all artists from the database and return to view
         $artists = Artist::paginate(20);
-        $records = Record::all();
+        foreach($artists as $artist)
+        {
+            $artistsId[] = $artist->id;
+        }
+
+        $records = Record::whereIn('artist_id', $artistsId)->get();
+            
         return view('artists.all', ['artists' => $artists, 'records' => $records]);
     }
 
@@ -36,6 +43,7 @@ class ArtistController extends Controller
         $records = Record::with(['artist'])->where('artist_id', '=', $artist->id)->get();
 
         //dd($records);
+
         return view('artists.details', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value]);
     }
 
@@ -44,7 +52,7 @@ class ArtistController extends Controller
         return view('artists.create');
     }
 
-     /**
+    /**
      * Store a newly created resource in storage.
      *
      * @param  \App\Http\Requests\StoreArtistRequest  $request
@@ -71,7 +79,7 @@ class ArtistController extends Controller
             $artist->description = $request->input('description');
             $artist->save(); //persist the data
 
-/*             //save the image 
+            /*             //save the image 
             if ($request->hasFile('file')) {
                 $files = $request->file('file');
                 foreach ($files as $file) {
@@ -146,7 +154,7 @@ class ArtistController extends Controller
         $artist = Artist::find($artist->id);
         $result = Record::where('artist_id', '=', $artist->id)->first();
         if (!$result) {
-/*             $images = Image::where('reference', '=', 'artist')
+            /*             $images = Image::where('reference', '=', 'artist')
                 ->where('reference_id', '=', $artist->id)
                 ->get();
 
@@ -174,12 +182,11 @@ class ArtistController extends Controller
             ->get();
 
         $total_value = $records->sum('current_price');
-/*          return Pdf::view('artists.print', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value])
+        /*          return Pdf::view('artists.print', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value])
             ->format('a4')
             ->landscape()
             ->name($artist->name . '-' . $current . '.pdf');  */
-        $pdf = PDF::loadView('artists.print', ['artist' => $artist, 'records' => $records , 'total_value' => $total_value]);
+        $pdf = PDF::loadView('artists.print', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value]);
         return $pdf->stream($artist->name . '-' . $current . '.pdf');
-         
     }
 }

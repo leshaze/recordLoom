@@ -87,7 +87,7 @@
                     </div>
                     <div class="col-sm-2">
                         <label for="platform">Anbieter</label>
-                        <br>{{ $record->platform->name }}
+                        <br>@if($record->platform) {{ $record->platform->name}}@endif
                     </div>
                 </div>
                 <div class="row p-2">

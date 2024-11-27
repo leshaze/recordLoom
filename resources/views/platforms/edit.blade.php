@@ -7,12 +7,14 @@
                     @method('PUT')
                     @csrf
                     <div class="row p-2">
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <label for="floatingInput">Platform</label>
                             <input type="text" class="form-control form-control-sm @error('name') border border-danger @enderror" name="platform_name" id="platform_name" placeholder="Platform" value="{{ $platform->name }}" required>
                             <input type="hidden" name="id" id="id" value="{{ $platform->id }}">
                         </div>
-                        <div class="col-sm-2">
+                    </div>
+                    <div class="row p-2">
+                        <div class="col-sm-3">
                             <label for="floatingInput">URL</label>
                             <input type="text" class="form-control form-control-sm @error('url') border border-danger @enderror" name="url" id="url" placeholder="URL" value="{{ $platform->url }}">
                         </div>

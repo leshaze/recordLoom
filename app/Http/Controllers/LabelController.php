@@ -16,7 +16,15 @@ class LabelController extends Controller
     {
         //Show all label from the database and return to view
         $labels = Label::paginate(20);
-        $records = Record::all();
+        $records = [];
+        //Show all artists from the database and return to view
+        foreach($labels as $label)
+        {
+            $labelsId[] = $label->id;
+        }
+
+        $records = Record::whereIn('artist_id', $labelsId)->get();
+
         return view('labels.all', ['labels' => $labels, 'records' => $records]);
     }
 

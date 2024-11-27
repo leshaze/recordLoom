@@ -6,7 +6,7 @@
                 <form action="{{ route('platforms.store') }}" method="post" class="Label" enctype="multipart/form-data">
                     @csrf
                     <div class="row p-2">
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <label for="floatingInput">Platform</label>
                             <input type="text" class="form-control form-control-sm @error('platform_name') border border-danger @enderror" name="platform_name" id="platform_name" placeholder="Platform" value="{{ old('platform_name') }}">
                             @error('platform_name')
@@ -15,7 +15,9 @@
                             </span>
                             @enderror
                         </div>
-                        <div class="col-sm-2">
+                    </div>
+                    <div class="row p-2">
+                        <div class="col-sm-3">
                             <label for="floatingInput">URL</label>
                             <input type="text" class="form-control form-control-sm @error('url') border border-danger @enderror" name="url" id="url" placeholder="URL" value="{{ old('url') }}">
                         </div>
