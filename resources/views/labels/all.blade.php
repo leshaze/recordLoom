@@ -17,22 +17,14 @@
                             <a href="{{ route('labels.show', $label->id) }}">{{ $label->name }} </a>
 </td>
                         <td style="text-align: center;">
-                            @if ($records->where('label_id', $label->id)->where('kind', 'LP')->sum(function ($record) {
-                            return $record->current_price;
-                            }))
                             {{ $records->where('label_id', $label->id)->where('kind', 'LP')->sum(function ($record) {
                                                 return $record->current_price;
                                         }) }} €
-                            @endif
                         </td>
                         <td style="text-align: center;">
-                            @if ($records->where('label_id', $label->id)->where('kind', 'CD')->sum(function ($record) {
-                            return $record->current_price;
-                            }))
                             {{ $records->where('label_id', $label->id)->where('kind', 'CD')->sum(function ($record) {
                                                 return $record->current_price;
                                         }) }} €
-                            @endif
                         </td>
                         <td>
                             @if ($label->description)

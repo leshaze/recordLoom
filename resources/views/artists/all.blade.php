@@ -39,22 +39,15 @@
                             <a href="{{ route('artists.show', $artist->id) }}">{{ $artist->name }} </a>
                         </td>
                         <td style="text-align: center;">
-                            @if ($records->where('artist_id', $artist->id)->where('kind', 'LP')->sum(function ($record) {
-                            return $record->current_price;
-                            }))
                             {{ $records->where('artist_id', $artist->id)->where('kind', 'LP')->sum(function ($record) {
                                                 return $record->current_price;
                                         }) }} €
-                            @endif
+
                         </td>
                         <td style="text-align: center;">
-                            @if ($records->where('artist_id', $artist->id)->where('kind', 'CD')->sum(function ($record) {
-                            return $record->current_price;
-                            }))
                             {{ $records->where('artist_id', $artist->id)->where('kind', 'CD')->sum(function ($record) {
                                                 return $record->current_price;
                                         }) }} €
-                            @endif
                         </td>
                         <td>
                             @if ($artist->description)
