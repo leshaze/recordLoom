@@ -15,7 +15,7 @@
                     <tr>
                         <td align="left">
                             <a href="{{ route('labels.show', $label->id) }}">{{ $label->name }} </a>
-</td>
+                        </td>
                         <td style="text-align: center;">
                             {{ $records->where('label_id', $label->id)->where('kind', 'LP')->sum(function ($record) {
                                                 return $record->current_price;
