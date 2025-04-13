@@ -213,7 +213,7 @@
                     <div class="row p-2">
                         <div class="col-sm-4">
                             <label for="floatingTextarea2">Beschreibung</label>
-                            <textarea class="form-control form-control-sm" placeholder="Beschreibung" name="note" id="note" style="height: 100px">{{ old('note') }}</textarea>
+                            <textarea class="form-control form-control-sm" placeholder="Beschreibung" name="note" id="note" style="height: 100px"> @if ($record->note) {{ $record->note }} @endif</textarea>
                         </div>
                     </div>
                     <div class="p-2">

@@ -21,9 +21,10 @@ class LabelController extends Controller
         foreach($labels as $label)
         {
             $labelsId[] = $label->id;
+            $records = Record::whereIn('artist_id', $labelsId)->get();
         }
 
-        $records = Record::whereIn('artist_id', $labelsId)->get();
+        
 
         return view('labels.all', ['labels' => $labels, 'records' => $records]);
     }

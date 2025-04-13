@@ -25,13 +25,13 @@ class ArtistController extends Controller
         $records = [];
         //Show all artists from the database and return to view
         $artists = Artist::paginate(20);
-        foreach($artists as $artist)
-        {
-            $artistsId[] = $artist->id;
-        }
 
-        $records = Record::whereIn('artist_id', $artistsId)->get();
-            
+        foreach($artists as $artist)
+            {
+                $artistsId[] = $artist->id;
+                $records = Record::whereIn('artist_id', $artistsId)->get();
+            }
+
         return view('artists.all', ['artists' => $artists, 'records' => $records]);
     }
 

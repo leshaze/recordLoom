@@ -103,6 +103,10 @@
                         <label for="current_price">Aktueller Preis</label>
                         <br>{{ $record->current_price }} €
                     </div>
+                    <div class="col-sm-2">
+                            <label for="buy_price">Kaufpreis €</label>
+                            <br>{{ $record->buy_price }} €
+                        </div>
                 </div>
 
                 @if ($record->sold)
@@ -118,9 +122,16 @@
                     <div class="col-sm-2">
                         <label for="sold_price">Verkaufspreis €</label>
                         <br>{{ $record->sold_price }}
-
                     </div>
                 </div>
+                @endif
+                @if ($record->note)
+                <div class="row p-2">
+                        <div class="col-sm-4">
+                            <label for="floatingTextarea2">Beschreibung</label>
+                            <br>{{ $record->note }}
+                        </div>
+                    </div>
                 @endif
                 @if ($prices->count() >= '2')
                 <div class="row p-2">
