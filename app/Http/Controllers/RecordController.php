@@ -10,6 +10,8 @@ use App\Models\Platform;
 use App\Models\PriceHistory;
 use App\Http\Requests\StoreRecordRequest;
 use App\Http\Requests\UpdateRecordRequest;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 use Illuminate\Http\Request;
 
@@ -27,6 +29,23 @@ class RecordController extends Controller
         //dd($records);
         return view('records.all', ['records' => $records]);
 
+    }
+
+        public function selling()
+    {
+        //Show all Records from the database and return to view
+        // $records = Record::join('artists', 'records.artist_id', '=', 'artists.id')
+        //     ->select('records.*')
+        //     ->orderBy('artists.name', 'ASC')
+        //     ->paginate(10);
+        $records = Record::orderBy('kind', 'ASC')
+                            ->orderBy('artist_id', 'ASC')
+                            ->where('selling', '=', '1')
+                            ->where('sold', '=', '0')
+                            ->paginate(60);
+
+        //dd($records);
+        return view('records.all', ['records' => $records]);
     }
 
     /**
@@ -305,7 +324,9 @@ class RecordController extends Controller
         $record->sold_price = $request->sold_price ? str_replace(',', '.', $request->sold_price) : $record->sold_price = null;
         $lost = ($request->lost == "on") ? True : False;
         $record->lost = $lost;
-        
+        $selling = ($request->selling == "on") ? True : False;
+        $record->selling = $selling;
+
         // Check for images
         /* if ($request->file('image')) {
             $image = $request->file('image');
@@ -347,6 +368,25 @@ class RecordController extends Controller
         //delete
         $record->delete();
         return redirect()->route('records.index')->with('info', 'Record ' . $record->title . ' von ' . $record->artist->name . ' deleted successfully');
+    }
+
+    public function print(Record $record)
+    {
+        //Find the label        
+        //Return view to detail artist
+        $current = Carbon::now();
+        $current = $current->format('d.m.Y');
+        
+
+        $records = Record::orderBy('kind', 'ASC')
+                            ->orderBy('artist_id', 'ASC')
+                            ->where('selling', '=', '1')
+                            ->where('sold', '=', '0')
+                            ->get();
+
+        $pdf = PDF::loadView('records.print', ['records' => $records]);
+        return $pdf->stream('Verkaufsliste -' . $current . '.pdf');
+        //return view('records.print', ['records' => $records]);
     }
 
 }

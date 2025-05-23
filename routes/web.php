@@ -25,6 +25,7 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__.'/auth.php';
 Route::get('/records/print',[RecordController::class, 'print'])->name('records.print');
+Route::get('/records/selling',[RecordController::class, 'selling'])->name('records.selling');
 Route::get('/artists/{artist}/print',[ArtistController::class, 'print'])->name('artists.print');
 Route::get('/labels/{label}/print',[LabelController::class, 'print'])->name('labels.print');
 

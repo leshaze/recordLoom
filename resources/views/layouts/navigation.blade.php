@@ -15,6 +15,7 @@
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Records</a>
                     <div class="dropdown-menu">
                         <a href="{{ route('records.index') }}" class="dropdown-item">All Records</a>
+                        <a href="{{ route('records.selling') }}" class="dropdown-item">For Selling</a>
                         <a href="{{ route('records.create') }}" class="dropdown-item">Add new Record</a>
                     </div>
                 </li>

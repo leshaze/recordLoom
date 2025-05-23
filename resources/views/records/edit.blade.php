@@ -19,7 +19,13 @@
                                 CD
                             </label>
                         </div>
-                        <div class="col-sm-2">
+                        <div class="col-sm-1">
+                            <input class="form-check-input" type="checkbox" id="selling" name="selling"
+                                @if ($record->selling) checked @endif>
+                            <label class="form-check-label" for="selling">Verkaufen</label><br>
+
+                        </div>
+                        <div class="col-sm-1">
                             <input class="form-check-input" type="checkbox" id="sold" name="sold"
                                 @if ($record->sold) checked @endif>
                             <label class="form-check-label" for="sold">Verkauft</label><br>
@@ -27,6 +33,7 @@
                                 @if ($record->lost) checked @endif>
                             <label class="form-check-label" for="lost">Verloren</label><br>
                         </div>
+
                     </div>
                     <div class="row p-2">
                         <div class="col-sm-3">
