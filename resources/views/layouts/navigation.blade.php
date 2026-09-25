@@ -54,45 +54,24 @@
         </div>
 
             <!-- Right Side Of Navbar -->
-            <ul class="navbar-nav ms-auto">
-                <!-- Authentication Links -->
-
-                {{-- @if (Route::has('login.index'))
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{{ route('login.index') }}">{{ __('Login') }}</a>
-                </li>
-                @endif
-
-                @if (Route::has('register.index'))
+            <ul class="navbar-nav ms-auto align-items-md-center gap-2">
                 <li class="nav-item">
-                    <a class="nav-link"
-                        href="{{ route('register.index') }}">{{ __('Register') }}</a>
-                </li>
-                @endif --}}
-                <!--  Searchbar -->
-                <li>
                     <input class="form-control" type="text" id="search" placeholder="Search">
                 </li>
-                {{--
-                                <li class="nav-item dropdown">
-                                <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button"
-                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
-                                    {{ Auth::user()->name }} - {{ AUTH::user()->role->name }}
-                </a>
-
-                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item" href="#"
-                        onclick="event.preventDefault();
-                                        document.getElementById('logout-form').submit();">
-                        {{ __('Logout') }}
-                    </a>
-
-                    <form id="logout-form" action="{{ route('logout.index') }}" method="POST"
-                        class="d-none">
-                        @csrf
-                    </form>
-                </div>
-                </li> --}}
+                @auth
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a href="{{ route('profile.edit') }}" class="dropdown-item">{{ __('Profile') }}</a>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" class="dropdown-item">{{ __('Log Out') }}</button>
+                            </form>
+                        </div>
+                    </li>
+                @endauth
             </ul>
         </div>
     </div>

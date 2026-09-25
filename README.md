@@ -2,6 +2,14 @@
 
 A small CRM project to archive records.
 
+### Users
+
+All pages require a login. There is no public registration, users are created on the command line:
+
+```
+php artisan user:create
+```
+
 ### Open issues
 
 - tbd

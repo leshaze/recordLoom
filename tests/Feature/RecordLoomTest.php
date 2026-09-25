@@ -5,6 +5,11 @@ use App\Models\Label;
 use App\Models\Platform;
 use App\Models\PriceHistory;
 use App\Models\Record;
+use App\Models\User;
+
+beforeEach(function () {
+    $this->actingAs(User::factory()->create());
+});
 
 function makeRecord(array $attributes = []): Record
 {
@@ -169,4 +174,45 @@ test('removed insecure routes are gone', function () {
     $this->get('/record/'.$record->id.'/delete')->assertNotFound();
     $this->get('/login/1/edit')->assertNotFound();
     expect(Record::count())->toBe(1);
+});
+
+test('guests are redirected to the login page', function () {
+    auth()->logout();
+    $record = makeRecord();
+
+    foreach (['/', route('records.index'), route('records.show', $record), route('artists.index'), route('autocomplete'), route('records.print'), route('profile.edit')] as $url) {
+        $this->get($url)->assertRedirect(route('login'));
+    }
+
+    $this->delete(route('records.destroy', $record))->assertRedirect(route('login'));
+    $this->post(route('artists.store'), ['artist_name' => 'Guest'])->assertRedirect(route('login'));
+    expect(Record::count())->toBe(1)->and(Artist::where('name', 'Guest')->exists())->toBeFalse();
+});
+
+test('public registration is disabled', function () {
+    auth()->logout();
+
+    $this->get('/register')->assertNotFound();
+    $this->post('/register', [
+        'name' => 'Intruder',
+        'email' => 'intruder@example.com',
+        'password' => 'secret-password',
+        'password_confirmation' => 'secret-password',
+    ])->assertNotFound();
+
+    expect(User::where('email', 'intruder@example.com')->exists())->toBeFalse();
+});
+
+test('users can be created with the artisan command', function () {
+    $this->artisan('user:create', ['--name' => 'Admin', '--email' => 'admin@example.com'])
+        ->expectsQuestion('Password', 'a-long-password')
+        ->expectsQuestion('Confirm password', 'a-long-password')
+        ->assertSuccessful();
+
+    expect(User::where('email', 'admin@example.com')->exists())->toBeTrue();
+
+    $this->artisan('user:create', ['--name' => 'Admin', '--email' => 'admin@example.com'])
+        ->expectsQuestion('Password', 'short')
+        ->expectsQuestion('Confirm password', 'short')
+        ->assertFailed();
 });
