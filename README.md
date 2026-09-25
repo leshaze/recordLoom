@@ -13,9 +13,8 @@ php artisan user:role mail@example.com admin   # change the role of an existing 
 ```
 
 - **Admin**: can create, change and delete all entries, sees all data and the interests of all users.
-  Users can mark records they are interested in and see their own list under "Meine Interessen".
-
 - **User**: can only read. All prices (current price, buy price, price history, sums), sale details and notes are hidden.
+  Users can mark records they are interested in and see their own list under "Meine Interessen".
 
 ### Updating an existing installation
 
