@@ -81,7 +81,7 @@
 
 <body>
     <main class="m-2">
-        <h2 class="text-center">{{ $label->name }} - {{ $total_value }} €</h2>
+        <h2 class="text-center">{{ $label->name }}@can('admin') - {{ $total_value }} €@endcan</h2>
         <div class="row">
             <div class="col-sm-12">
                 @if(!empty($records) && $records->count())
@@ -98,7 +98,7 @@
                         <th>Matrix-Nr.</th>
                         <th>Archiv-Nr.</th>
                         <th>Barcode</th>
-                        <th>Aktueller Preis</th>
+                        @can('admin')<th>Aktueller Preis</th>@endcan
                         <th>Erscheinungsjahr</th>
                         <th>Herkunftsland</th>
                     </tr>
@@ -113,7 +113,7 @@
                         <td>{{ $record->matrix_number}}</td>
                         <td>{{ $record->archive_number}}</td>
                         <td>{{ $record->barcode}}</td>
-                        <td>@if($record->current_price) {{ $record->current_price}} € @endif</td>
+                        @can('admin')<td>@if($record->current_price) {{ $record->current_price}} € @endif</td>@endcan
                         <td>{{ $record->release_date}}</td>
                         <td>{{ $record->country?->name }}</td>
                     </tr>

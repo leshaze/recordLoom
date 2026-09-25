@@ -50,13 +50,33 @@ test('users can read everything but not create, change or delete', function () {
     expect(Record::count())->toBe(1)->and($record->fresh()->title)->toBe('Autobahn');
 });
 
-test('users do not see the buy price, sale details and notes', function () {
+test('users do not see any prices, sale details and notes', function () {
     $record = recordFor();
+    $record->current_price = '23.45';
+    $record->save();
+    foreach (['11.11', '22.22'] as $price) {
+        \App\Models\PriceHistory::forceCreate(['price' => $price, 'record_id' => $record->id]);
+    }
+    $platform = Platform::create(['name' => 'Discogs']);
+    $record->platform_id = $platform->id;
+    $record->save();
+
+    $this->actingAs(User::factory()->create());
+
+    foreach (['/', route('records.index'), route('records.show', $record), route('artists.index'), route('artists.show', $record->artist_id),
+        route('labels.index'), route('labels.show', $record->label_id), route('platforms.index'), route('platforms.show', $platform)] as $url) {
+        $this->get($url)->assertOk()->assertDontSee('€')->assertDontSee('23.45');
+    }
+
+    $this->get(route('records.show', $record))
+        ->assertDontSee('Preisentwicklung')
+        ->assertDontSee('11.11')
+        ->assertDontSee('22.22');
 
     $this->actingAs(User::factory()->create())
         ->get(route('records.show', $record))
         ->assertOk()
-        ->assertSee('20 €')
+        ->assertDontSee('Aktueller Preis')
         ->assertDontSee('Kaufpreis')
         ->assertDontSee('7.77')
         ->assertDontSee('Secret Buyer')
@@ -65,6 +85,8 @@ test('users do not see the buy price, sale details and notes', function () {
 
     $this->actingAs(User::factory()->admin()->create())
         ->get(route('records.show', $record))
+        ->assertSee('23.45')
+        ->assertSee('Preisentwicklung')
         ->assertSee('Kaufpreis')
         ->assertSee('7.77')
         ->assertSee('Secret Buyer')

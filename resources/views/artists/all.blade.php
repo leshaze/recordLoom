@@ -28,8 +28,10 @@
                 <table class="table table-sm small d-inline-flex">
                     <tr>
                         <th>Name</th>
+                        @can('admin')
                         <th>Summe LP</th>
                         <th>Summe CD</th>
+                        @endcan
                         <th>Description</th>
 
                     </tr>
@@ -38,6 +40,7 @@
                         <td align="left">
                             <a href="{{ route('artists.show', $artist->id) }}">{{ $artist->name }} </a>
                         </td>
+                        @can('admin')
                         <td style="text-align: center;">
                             {{ $records->where('artist_id', $artist->id)->where('kind', 'LP')->sum(function ($record) {
                                                 return $record->current_price;
@@ -49,6 +52,7 @@
                                                 return $record->current_price;
                                         }) }} €
                         </td>
+                        @endcan
                         <td>
                             @if ($artist->description)
                             {{ $artist->description }}

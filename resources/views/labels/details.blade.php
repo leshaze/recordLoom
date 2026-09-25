@@ -3,7 +3,7 @@
         <div class="wrapper flex">
             <div class="card table-responsive">
                 <div class="card-header">
-                    <div> {{ $label->name }} - {{ $total_value }} €@can('admin')
+                    <div> {{ $label->name }}@can('admin') - {{ $total_value }} €
                         <a href="{{ route('labels.edit', ['label' => $label->id]) }}"
                             class="btn btn-sm"><i class="bi bi-pencil-square"></i></a>
                         <a href="javascript:document.getElementById('delete-label-form').submit();" class="btn btn-sm"
@@ -26,7 +26,7 @@
                         <th>Cover</th>
                         <th>Media</th>
                         <th>Katalog-Nr.</th>
-                        <th>Aktueller Preis</th>
+                        @can('admin')<th>Aktueller Preis</th>@endcan
                     </tr>
                     @foreach ($records as $record)
                     <tr>
@@ -39,7 +39,7 @@
                         <td>{{ $record->grading_cover }}</td>
                         <td>{{ $record->grading_media }}</td>
                         <td>{{ $record->catalog_number }}</td>
-                        <td>@if($record->current_price) {{ $record->current_price}} € @endif</td>
+                        @can('admin')<td>@if($record->current_price) {{ $record->current_price}} € @endif</td>@endcan
                     </tr>
                     @endforeach
                 </table>

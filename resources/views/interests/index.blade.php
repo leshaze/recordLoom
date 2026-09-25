@@ -9,8 +9,7 @@
                         <th>Künstler</th>
                         <th>Title</th>
                         <th>Label</th>
-                        <th>Aktueller Preis</th>
-                        <th>Seit</th>
+                                                <th>Seit</th>
                         <th>Interesse</th>
                     </tr>
                     @foreach ($records as $record)
@@ -19,7 +18,6 @@
                             <td><a href="{{ route('artists.show', $record->artist_id) }}">{{ $record->artist->name }}</a></td>
                             <td><a href="{{ route('records.show', $record) }}">{{ $record->title }}</a></td>
                             <td><a href="{{ route('labels.show', $record->label_id) }}">{{ $record->label->name }}</a></td>
-                            <td>@if ($record->current_price) {{ $record->current_price }} € @endif</td>
                             <td>{{ $record->pivot->created_at?->format('d.m.Y') }}</td>
                             <td><x-interest-toggle :record="$record" :interested="true" label="" /></td>
                         </tr>

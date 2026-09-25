@@ -7,8 +7,10 @@
                 <table class="table table-sm small d-inline-flex">
                     <tr>
                         <th>Name</th>
+                        @can('admin')
                         <th>Summe LP</th>
                         <th>Summe CD</th>
+                        @endcan
                         <th>Description</th>
                         <th>URL</th>
                     </tr>
@@ -17,6 +19,7 @@
                         <td align="left">
                             <a href="{{ route('platforms.show', $platform->id) }}">{{ $platform->name }} </a>
                         </td>
+                        @can('admin')
                         <td style="text-align: center;">
                             @if ($records->where('platform_id', $platform->id)->where('kind', 'LP')->sum(function ($record) {
                             return $record->current_price;
@@ -35,6 +38,7 @@
                                         }) }} €
                             @endif
                         </td>
+                        @endcan
                         <td>
                             @if ($platform->description)
                             {{ $platform->description }}

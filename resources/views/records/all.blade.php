@@ -21,7 +21,7 @@
                             <th>Matrix-Nr.</th>
                             <th>Archiv-Nr.</th>
                             <th>Barcode</th>
-                            <th>Aktueller Preis</th>
+                            @can('admin')<th>Aktueller Preis</th>@endcan
                             <th>Erscheinungsjahr</th>
                             <th>Herkunftsland</th>
                             @can('admin')
@@ -80,11 +80,13 @@
                                         {{ $record->barcode }}
                                     @endif
                                 </td>
+                                @can('admin')
                                 <td>
                                     @if ($record->current_price)
                                         {{ $record->current_price }} €
                                     @endif
                                 </td>
+                                @endcan
                                 <td>
                                     @if ($record->release_date)
                                         {{ $record->release_date }}

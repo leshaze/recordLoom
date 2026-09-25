@@ -17,7 +17,9 @@
 
 
                         Aktuelle Einträge: <b>{{ $count }}</b><br>
+                        @can('admin')
                         Aktuelle Summe aller Einträge: <b>{{ $total_value }} €</b><br>
+                        @endcan
                         Aktuelle Anzahl von CDs: <b>{{ $count_cd }}</b><br>
                         Aktuelle Anzahl von LPs: <b>{{ $count_lp }}</b><br>
                         Aktuelle Anzahl von Künstlern: <b>{{ $count_artist }}</b><br>

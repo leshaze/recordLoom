@@ -104,11 +104,11 @@
                         <label for="grading_cover">Grading Cover</label>
                         <br>{{ $record->grading_cover }}
                     </div>
+                    @can('admin')
                     <div class="col-sm-2">
                         <label for="current_price">Aktueller Preis</label>
                         <br>{{ $record->current_price }} €
                     </div>
-                    @can('admin')
                     <div class="col-sm-2">
                         <label for="buy_price">Kaufpreis €</label>
                         <br>{{ $record->buy_price }} €
@@ -153,7 +153,7 @@
                 </div>
                 @endif
                 @endcan
-                @if ($prices->count() >= '2')
+                @if (Gate::allows('admin') && $prices->count() >= '2')
                 <div class="row p-2">
                     <div class="col-sm-3">
                         
@@ -173,8 +173,8 @@
             </div>
         </div>
     </div>
+    @can('admin')
     <script type="module">
-        
         const labels = @json($prices->map(fn ($price) => $price->created_at->format('d.m.y'))->values());
 
         const data = {
@@ -204,4 +204,5 @@
             new Chart(canvas, config);
         }
     </script>
+    @endcan
 </x-app-layout>

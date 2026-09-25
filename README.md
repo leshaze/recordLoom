@@ -13,11 +13,29 @@ php artisan user:role mail@example.com admin   # change the role of an existing 
 ```
 
 - **Admin**: can create, change and delete all entries, sees all data and the interests of all users.
-- **User**: can only read. Buy price, sale details (buyer, date, price) and notes are hidden.
   Users can mark records they are interested in and see their own list under "Meine Interessen".
 
-After updating an existing installation run `php artisan migrate` and give your own account admin rights
-with `php artisan user:role`, because existing users become normal users.
+- **User**: can only read. All prices (current price, buy price, price history, sums), sale details and notes are hidden.
+
+### Updating an existing installation
+
+The new migrations only add a column, a table and indexes, no existing data is changed or deleted.
+PHP 8.3 or newer is required.
+
+```
+php artisan down                                  # maintenance mode
+cp database/database.sqlite database/backup.sqlite   # backup (MySQL: mysqldump)
+git pull
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+php artisan migrate:status                        # the new migrations are "Pending"
+php artisan migrate --force
+php artisan user:role your@mail.example admin     # existing users become normal users
+php artisan optimize:clear
+php artisan up
+```
+
+Never run `migrate:fresh`, `migrate:refresh` or `db:seed` on the live database, they delete or overwrite data.
 
 ### Open issues
 

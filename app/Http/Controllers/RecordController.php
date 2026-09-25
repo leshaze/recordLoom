@@ -82,9 +82,10 @@ class RecordController extends Controller
 
     public function show(Record $record)
     {
-        $prices = $record->prices()->with('platform')->latest()->take(5)->get()->reverse();
-
+        // Prices and interests of other users are only visible for admins.
+        $prices = collect();
         if (Gate::allows('admin')) {
+            $prices = $record->prices()->with('platform')->latest()->take(5)->get()->reverse();
             $record->load(['interestedUsers' => fn ($query) => $query->orderBy('name')]);
         }
 
