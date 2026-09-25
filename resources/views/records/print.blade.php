@@ -99,7 +99,7 @@
                         <!-- <th>Aktueller Preis</th> -->
                         <th>Erscheinungsjahr</th>
                         <th>Herkunftsland</th>
-                        <th>Notiz</th>
+                        @can('admin')<th>Notiz</th>@endcan
                     </tr>
                     @foreach($records as $record)
                     <tr>
@@ -115,7 +115,7 @@
                         <!-- <td>@if($record->current_price) {{ $record->current_price}} € @endif</td> -->
                         <td>{{ $record->release_date}}</td>
                         <td>{{ $record->country?->name }}</td>
-                        <td>{{ $record->note }}</td>
+                        @can('admin')<td>{{ $record->note }}</td>@endcan
                     </tr>
                     @endforeach
                 </table>

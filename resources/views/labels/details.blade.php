@@ -3,7 +3,8 @@
         <div class="wrapper flex">
             <div class="card table-responsive">
                 <div class="card-header">
-                    <div> {{ $label->name }} - {{ $total_value }} €<a href="{{ route('labels.edit', ['label' => $label->id]) }}"
+                    <div> {{ $label->name }} - {{ $total_value }} €@can('admin')
+                        <a href="{{ route('labels.edit', ['label' => $label->id]) }}"
                             class="btn btn-sm"><i class="bi bi-pencil-square"></i></a>
                         <a href="javascript:document.getElementById('delete-label-form').submit();" class="btn btn-sm"
                             onclick="return confirm(@js('Delete ' . $label->name . '?'))"><i class="bi bi-trash"></i></a>
@@ -12,6 +13,7 @@
                             @method('DELETE')
                             {{ csrf_field() }}
                         </form>
+                        @endcan
                         </td>
                     </div>
                     <div class="position-absolute top-0 end-0"><a class="btn btn-info btn-sm" href="{{ route('labels.print', ['label' => $label->id]) }}" target="_blank" rel="noopener noreferrer">Export</a></div>

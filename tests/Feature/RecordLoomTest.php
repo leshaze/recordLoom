@@ -8,7 +8,7 @@ use App\Models\Record;
 use App\Models\User;
 
 beforeEach(function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(User::factory()->admin()->create());
 });
 
 function makeRecord(array $attributes = []): Record

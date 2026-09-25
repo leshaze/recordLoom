@@ -13,6 +13,8 @@ use App\Models\Record;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 
 class RecordController extends Controller
 {
@@ -25,14 +27,14 @@ class RecordController extends Controller
     {
         $records = Record::with(self::LIST_RELATIONS)->paginate(15);
 
-        return view('records.all', ['records' => $records]);
+        return view('records.all', ['records' => $records, 'interestIds' => $this->interestIds()]);
     }
 
     public function selling()
     {
         $records = $this->sellingQuery()->with(self::LIST_RELATIONS)->paginate(60);
 
-        return view('records.all', ['records' => $records]);
+        return view('records.all', ['records' => $records, 'interestIds' => $this->interestIds()]);
     }
 
     public function create()
@@ -82,7 +84,15 @@ class RecordController extends Controller
     {
         $prices = $record->prices()->with('platform')->latest()->take(5)->get()->reverse();
 
-        return view('records.details', ['record' => $record, 'prices' => $prices]);
+        if (Gate::allows('admin')) {
+            $record->load(['interestedUsers' => fn ($query) => $query->orderBy('name')]);
+        }
+
+        return view('records.details', [
+            'record' => $record,
+            'prices' => $prices,
+            'interested' => $this->interestIds()->contains($record->id),
+        ]);
     }
 
     public function edit(Record $record)
@@ -173,6 +183,14 @@ class RecordController extends Controller
             ->where('sold', false)
             ->orderBy('kind', 'ASC')
             ->orderBy('artist_id', 'ASC');
+    }
+
+    /**
+     * Ids of the records the logged in user is interested in.
+     */
+    private function interestIds(): Collection
+    {
+        return auth()->user()->interests()->pluck('records.id');
     }
 
     private function addPriceHistory(Record $record): void

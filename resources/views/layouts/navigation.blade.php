@@ -16,28 +16,38 @@
                     <div class="dropdown-menu">
                         <a href="{{ route('records.index') }}" class="dropdown-item">All Records</a>
                         <a href="{{ route('records.selling') }}" class="dropdown-item">For Selling</a>
-                        <a href="{{ route('records.create') }}" class="dropdown-item">Add new Record</a>
+                        @can('admin')<a href="{{ route('records.create') }}" class="dropdown-item">Add new Record</a>@endcan
                     </div>
                 </li>
                 <li class="nav-item dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Artists</a>
                     <div class="dropdown-menu">
                         <a href="{{ route('artists.index') }}" class="dropdown-item">All Artists</a>
-                        <a href="{{ route('artists.create') }}" class="dropdown-item">Add new Artist</a>
+                        @can('admin')<a href="{{ route('artists.create') }}" class="dropdown-item">Add new Artist</a>@endcan
                     </div>
                 </li>
                 <li class="nav-item dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Labels</a>
                     <div class="dropdown-menu">
                         <a href="{{ route('labels.index') }}" class="dropdown-item">All Label</a>
-                        <a href="{{ route('labels.create') }}" class="dropdown-item">Add new Label</a>
+                        @can('admin')<a href="{{ route('labels.create') }}" class="dropdown-item">Add new Label</a>@endcan
                     </div>
                 </li>
+                @can('admin')
+                <li class="nav-item">
+                    <a href="{{ route('interests.overview') }}" class="nav-link">Interessen</a>
+                </li>
+                @endcan
+                @can('mark-interest')
+                <li class="nav-item">
+                    <a href="{{ route('interests.index') }}" class="nav-link">Meine Interessen</a>
+                </li>
+                @endcan
                 <li class="nav-item dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Platform</a>
                     <div class="dropdown-menu">
                         <a href="{{ route('platforms.index') }}" class="dropdown-item">All Platforms</a>
-                        <a href="{{ route('platforms.create') }}" class="dropdown-item">Add new Platform</a>
+                        @can('admin')<a href="{{ route('platforms.create') }}" class="dropdown-item">Add new Platform</a>@endcan
                     </div>
                 </li>
             </ul>

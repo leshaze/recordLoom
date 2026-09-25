@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Record extends Model
 {
@@ -24,6 +25,14 @@ class Record extends Model
     public function prices()
     {
         return $this->hasMany(PriceHistory::class);
+    }
+
+    /**
+     * Users that marked this record as interesting.
+     */
+    public function interestedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'record_interests')->withTimestamps();
     }
 
     public function platform()

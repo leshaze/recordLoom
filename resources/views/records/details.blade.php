@@ -2,7 +2,8 @@
     <div class="container">
         <div class="wrapper flex">
             <div class="card">
-                <div class="card-header">{{ $record->title }} <a href="{{ route('records.edit', ['record' => $record->id]) }}"
+                <div class="card-header">{{ $record->title }} @can('admin')
+                    <a href="{{ route('records.edit', ['record' => $record->id]) }}"
                         class="btn btn-sm"><i class="bi bi-pencil-square"></i></a> <a
                         href="javascript:document.getElementById('delete-record-form').submit();" class="btn btn-sm"><i
                             class="bi bi-trash"
@@ -12,6 +13,10 @@
                         @method('DELETE')
                         {{ csrf_field() }}
                     </form>
+                    @endcan
+                    @can('mark-interest')
+                        <span class="float-end"><x-interest-toggle :record="$record" :interested="$interested" /></span>
+                    @endcan
                 </div>
                 <div class="row p-2">
                     <div class="col-sm-1">
@@ -103,13 +108,15 @@
                         <label for="current_price">Aktueller Preis</label>
                         <br>{{ $record->current_price }} €
                     </div>
+                    @can('admin')
                     <div class="col-sm-2">
-                            <label for="buy_price">Kaufpreis €</label>
-                            <br>{{ $record->buy_price }} €
-                        </div>
+                        <label for="buy_price">Kaufpreis €</label>
+                        <br>{{ $record->buy_price }} €
+                    </div>
+                    @endcan
                 </div>
 
-                @if ($record->sold)
+                @if ($record->sold && Gate::allows('admin'))
                 <div class="row p-2">
                     <div class="col-sm-2">
                         <label for="sold_date">Verkaufsdatum</label>
@@ -125,7 +132,7 @@
                     </div>
                 </div>
                 @endif
-                @if ($record->note)
+                @if ($record->note && Gate::allows('admin'))
                 <div class="row p-2">
                         <div class="col-sm-4">
                             <label for="floatingTextarea2">Beschreibung</label>
@@ -133,6 +140,19 @@
                         </div>
                     </div>
                 @endif
+                @can('admin')
+                @if ($record->interestedUsers->isNotEmpty())
+                <div class="row p-2">
+                    <div class="col-sm-6">
+                        <label>Interesse von</label>
+                        <br>
+                        @foreach ($record->interestedUsers as $user)
+                            <a href="{{ route('interests.overview', ['user' => $user->id]) }}">{{ $user->name }}</a>@if (! $loop->last), @endif
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+                @endcan
                 @if ($prices->count() >= '2')
                 <div class="row p-2">
                     <div class="col-sm-3">

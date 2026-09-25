@@ -24,8 +24,13 @@
                             <th>Aktueller Preis</th>
                             <th>Erscheinungsjahr</th>
                             <th>Herkunftsland</th>
+                            @can('admin')
                             <th>Edit</th>
                             <th>Delete</th>
+                            @endcan
+                            @can('mark-interest')
+                            <th>Interesse</th>
+                            @endcan
                         </tr>
                         @foreach ($records as $record)
                             <tr
@@ -90,6 +95,7 @@
                                         {{ $record->country?->name }}
                                     @endif
                                 </td>
+                                @can('admin')
                                 <td><a href="{{ route('records.edit', ['record' => $record->id]) }}"
                                         class="btn btn-sm">
                                         <i class="bi bi-pencil-square"></i></a>
@@ -104,6 +110,12 @@
                                         {{ csrf_field() }}
                                     </form>
                                 </td>
+                                @endcan
+                                @can('mark-interest')
+                                <td>
+                                    <x-interest-toggle :record="$record" :interested="$interestIds->contains($record->id)" label="" />
+                                </td>
+                                @endcan
                             </tr>
                         @endforeach
                     </table>

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -39,6 +40,23 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+    public const ROLE_ADMIN = 'admin';
+
+    public const ROLE_USER = 'user';
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    /**
+     * Records the user is interested in.
+     */
+    public function interests(): BelongsToMany
+    {
+        return $this->belongsToMany(Record::class, 'record_interests')->withTimestamps();
+    }
+
     protected function casts(): array
     {
         return [
