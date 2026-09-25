@@ -6,7 +6,7 @@
                 <div> {{ $artist->name }} - {{ $total_value }} €<a href="{{ route('artists.edit', ['artist' => $artist->id]) }}"
                             class="btn btn-sm"><i class="bi bi-pencil-square"></i></a>
                         <a href="javascript:document.getElementById('delete-artist-form').submit();" class="btn btn-sm"
-                            onclick="return confirm('Delete {{ $artist->name }}?')"><i class="bi bi-trash"></i></a>
+                            onclick="return confirm(@js('Delete ' . $artist->name . '?'))"><i class="bi bi-trash"></i></a>
                         <form id="delete-artist-form" action="{{ route('artists.destroy', ['artist' => $artist->id]) }}"
                             method="post" style="display: none;">
                             @method('DELETE')
@@ -14,7 +14,7 @@
                         </form>
                         </td>
                 </div>
-                <div class="position-absolute top-0 end-0"><a class="btn btn-info btn-sm" href="{{ route('artists.print', ['artist' => $artist->id]) }}" target="_blank">Export</a></div>
+                <div class="position-absolute top-0 end-0"><a class="btn btn-info btn-sm" href="{{ route('artists.print', ['artist' => $artist->id]) }}" target="_blank" rel="noopener noreferrer">Export</a></div>
             </div>
             <table class="table small xs">
                 <tr>

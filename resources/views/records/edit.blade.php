@@ -103,7 +103,7 @@
                         <div class="col-sm-2">
                             <label for="country">Herkunftsland</label>
                             <input type="text" name="country_name" id="country_name" class="form-control form-control-sm"
-                                placeholder="Herkunftsland" autofocus="" value="@if ($record->country_id) {{ $record->country->name }} @endif">
+                                placeholder="Herkunftsland" autofocus="" value="@if ($record->country_id) {{ $record->country?->name }} @endif">
                             <input type="hidden" name="country_id" id="country_id" value="{{ $record->country_id }}">
                         </div>
                         <div class="col-sm-2">

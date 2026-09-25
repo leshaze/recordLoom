@@ -6,7 +6,7 @@
                         class="btn btn-sm"><i class="bi bi-pencil-square"></i></a> <a
                         href="javascript:document.getElementById('delete-record-form').submit();" class="btn btn-sm"><i
                             class="bi bi-trash"
-                            onclick="return confirm('Delete {{ $record->artist->name }} - {{ $record->title }}?')"></i></a>
+                            onclick="return confirm(@js('Delete ' . $record->artist->name . ' - ' . $record->title . '?'))"></i></a>
                     <form id="delete-record-form" action="{{ route('records.destroy', ['record' => $record->id]) }}"
                         method="post" style="display: none;">
                         @method('DELETE')
@@ -75,7 +75,7 @@
                 <div class="row p-2">
                     <div class="col-sm-2">
                         <label for="country">Herkunftsland</label>
-                        <br>{{ $record->country->name }}
+                        <br>{{ $record->country?->name }}
                     </div>
                     <div class="col-sm-2">
                         <label for="release_date">Veröffentlichungsdat.</label>
@@ -141,7 +141,7 @@
                         
                         @foreach ($prices as $price)
                         {{ date('d.m.Y', strtotime($price->created_at)) }} - {{ $price->price }} € @if ($price->platform)
-                        - <a href="{{ $price->platform->url }}" target="_blank">{{ $price->platform->name }}</a><br>
+                        - <a href="{{ $price->platform->safe_url }}" target="_blank" rel="noopener noreferrer">{{ $price->platform->name }}</a><br>
                         @endif
                         @endforeach
                     </div>
@@ -155,11 +155,7 @@
     </div>
     <script type="module">
         
-        const labels = [
-            @foreach ($prices as $price)
-                "{{ date('d.m.y', strtotime($price->created_at)) }}",
-            @endforeach
-        ];
+        const labels = @json($prices->map(fn ($price) => $price->created_at->format('d.m.y'))->values());
 
         const data = {
             labels: labels,
@@ -167,11 +163,7 @@
                 label: '',
                 backgroundColor: 'rgb(255, 99, 132)',
                 borderColor: 'rgb(255, 99, 132)',
-                data: [
-                    @foreach ($prices as $price)
-                        {{ $price->price }},
-                    @endforeach
-                ]
+                data: @json($prices->map(fn ($price) => (float) $price->price)->values())
             }]
         };
 
@@ -187,9 +179,9 @@
             }
         };
 
-        const myChart = new Chart(
-            document.getElementById('myChart'),
-            config
-        );
+        const canvas = document.getElementById('myChart');
+        if (canvas) {
+            new Chart(canvas, config);
+        }
     </script>
 </x-app-layout>

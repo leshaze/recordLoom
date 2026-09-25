@@ -6,7 +6,7 @@
                     <div> {{ $label->name }} - {{ $total_value }} €<a href="{{ route('labels.edit', ['label' => $label->id]) }}"
                             class="btn btn-sm"><i class="bi bi-pencil-square"></i></a>
                         <a href="javascript:document.getElementById('delete-label-form').submit();" class="btn btn-sm"
-                            onclick="return confirm('Delete {{ $label->name }}?')"><i class="bi bi-trash"></i></a>
+                            onclick="return confirm(@js('Delete ' . $label->name . '?'))"><i class="bi bi-trash"></i></a>
                         <form id="delete-label-form" action="{{ route('labels.destroy', ['label' => $label->id]) }}"
                             method="post" style="display: none;">
                             @method('DELETE')
@@ -14,7 +14,7 @@
                         </form>
                         </td>
                     </div>
-                    <div class="position-absolute top-0 end-0"><a class="btn btn-info btn-sm" href="{{ route('labels.print', ['label' => $label->id]) }}" target="_blank">Export</a></div>
+                    <div class="position-absolute top-0 end-0"><a class="btn btn-info btn-sm" href="{{ route('labels.print', ['label' => $label->id]) }}" target="_blank" rel="noopener noreferrer">Export</a></div>
                 </div>
                 <table class="table small xs">
                     <tr>

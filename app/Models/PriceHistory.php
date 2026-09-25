@@ -2,16 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class priceHistory extends Model
+class PriceHistory extends Model
 {
-    /** @use HasFactory<\Database\Factories\PriceHistoryFactory> */
-    use HasFactory;
-    protected $table = "price_history";
-    
-    public function price()
+    protected $table = 'price_history';
+
+    public function record()
     {
         return $this->belongsTo(Record::class);
     }

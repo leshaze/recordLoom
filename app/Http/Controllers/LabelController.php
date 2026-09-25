@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Label;
-use App\Models\Record;
 use App\Http\Requests\StoreLabelRequest;
 use App\Http\Requests\UpdateLabelRequest;
+use App\Models\Label;
+use App\Models\Record;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
@@ -14,189 +13,81 @@ class LabelController extends Controller
 {
     public function index()
     {
-        //Show all label from the database and return to view
-        $labels = Label::paginate(20);
-        $records = [];
-        //Show all artists from the database and return to view
-        foreach($labels as $label)
-        {
-            $labelsId[] = $label->id;
-            $records = Record::whereIn('artist_id', $labelsId)->get();
-        }
-
-        
+        $labels = Label::orderBy('name')->paginate(20);
+        $records = Record::whereIn('label_id', $labels->pluck('id'))->get(['label_id', 'kind', 'current_price']);
 
         return view('labels.all', ['labels' => $labels, 'records' => $records]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
         return view('labels.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \App\Http\Requests\StoreLabelRequest  $request
-     * @return \Illuminate\Http\Response
-     */
     public function store(StoreLabelRequest $request)
     {
-        //check the input
-        $this->validate($request, [
-            'label_name' => 'required'
-        ]);
+        $name = $request->validated('label_name');
 
-        $get_label_id = Label::where('name', '=', $request->input('label_name'))->first();
-        if ($get_label_id) {
-            return redirect()->route('labels.create')->with('error', 'Label ' . $request->input('label_name') . ' is already in the database.');
+        if (Label::where('name', $name)->exists()) {
+            return redirect()->route('labels.create')->with('error', 'Label '.$name.' is already in the database.');
         }
-        if (!$get_label_id) {
-            //Persist the record in the database
-            //form data is available in the request object
-            $label = new Label();
-            //input method is used to get the value of input with its
-            //name specified
-            $label->name = $request->input('label_name');
-            $label->description = $request->input('description');
-            $label->save(); //persist the data
 
-            /*             //save the image 
-            if ($request->hasFile('file')) {
-                $files = $request->file('file');
-                foreach ($files as $file) {
-                    $name = $file->getClientOriginalName();
-                    $path = $file->store('images', 'public');
+        $label = new Label;
+        $label->name = $name;
+        $label->description = $request->validated('description');
+        $label->save();
 
-                    $save = new Image;
-                    $save->reference = 'label';
-                    $save->reference_id = $label->id;
-                    $save->name = $name;
-                    $save->path = $path;
-                    $save->save();
-                };
-            } */
-            return redirect()->route('labels.create')->with('info', 'Label ' . $label->name . ' added successfully');
-        }
+        return redirect()->route('labels.create')->with('info', 'Label '.$label->name.' added successfully');
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Label  $label
-     * @return \Illuminate\Http\Response
-     */
     public function show(Label $label)
     {
-        //Return view to detail label
-        $label = Label::find($label->id);
+        $records = $label->records()->with('artist')->get();
+        $total_value = $records->sum('current_price');
 
-        $records = Record::with(['label'])->where('label_id', '=', $label->id)->get();
-        $total_value = Record::where('label_id', '=', $label->id)->sum('current_price');
-        /*  $images = Image::where('reference', '=', 'label')
-            ->where('reference_id', '=', $label->id)
-            ->get(); */
-        //dd($records);
-        /* return view('labels.details', ['label' => $label, 'records' => $records, 'images' => $images, 'total_value' => $total_value]); */
         return view('labels.details', ['label' => $label, 'records' => $records, 'total_value' => $total_value]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Label  $label
-     * @return \Illuminate\Http\Response
-     */
     public function edit(Label $label)
     {
-        //Find the label
-        //$label = Label::where('id', '=', $label->id)->first();
-
-        /* $images = Image::where('reference', '=', 'label')
-            ->where('reference_id', '=', $label->id)
-            ->get(); */
-        if (empty($label)) {
-            return redirect()->route('labels.index')->with('error', 'Invalid label');
-        } else {
-            /* return view('labels.edit', ['label' => $label, 'images' => $images]); */
-            return view('labels.edit', ['label' => $label]);
-        }
+        return view('labels.edit', ['label' => $label]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \App\Http\Requests\UpdateLabelRequest  $request
-     * @param  \App\Models\Label  $label
-     * @return \Illuminate\Http\Response
-     */
     public function update(UpdateLabelRequest $request, Label $label)
     {
-        $this->validate($request, [
-            'label_name' => 'required'
-        ]);
-
-        $label->id = $request->id;
-        $label->name = $request->label_name;
-        $label->description = $request->description;
-
+        $label->name = $request->validated('label_name');
+        $label->description = $request->validated('description');
         $label->save();
 
-        return redirect()->route('labels.index')->with('info', 'Label ' . $label->name . ' updated successfully');
+        return redirect()->route('labels.index')->with('info', 'Label '.$label->name.' updated successfully');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Label  $label
-     * @return \Illuminate\Http\Response
-     */
     public function destroy(Label $label)
     {
-        $label = Label::find($label->id);
-        $result = Record::where('label_id', '=', $label->id)->first();
-        if (!$result) {
-            /* $images = Image::where('reference', '=', 'label')
-                ->where('reference_id', '=', $label->id)
-                ->get();
-
-            foreach ($images as $image) {
-                unlink(public_path() . '/storage/' . $image->path);
-                $image->delete($image->name);
-            } */
-            //delete
-            $label->delete();
-            return redirect()->route('labels.index')->with('info', 'Label ' . $label->name . ' deleted successfully');
-        } else {
-            return redirect()->route('labels.index')->with('error', 'Label ' . $label->name . ' could not be deleted. ');
+        if ($label->records()->exists()) {
+            return redirect()->route('labels.index')->with('error', 'Label '.$label->name.' could not be deleted. ');
         }
+
+        $label->delete();
+
+        return redirect()->route('labels.index')->with('info', 'Label '.$label->name.' deleted successfully');
     }
 
     public function print(Label $label)
     {
-        //Find the label        
-        // $records = Record::where('label_id', '=' , $label->id)
-        // ->orderBy('artists.name', 'asc')
-        // ->get();
-        $current = Carbon::now();
-        $current = $current->format('d.m.Y');
+        $current = Carbon::now()->format('d.m.Y');
 
-        $records = Record::where('label_id', '=', $label->id)
+        $records = $label->records()
+            ->select('records.*')
+            ->with(['artist', 'country'])
             ->join('artists', 'records.artist_id', '=', 'artists.id')
             ->orderBy('artists.name', 'ASC')
-            ->orderBy('title', 'ASC')->get();
+            ->orderBy('records.title', 'ASC')
+            ->get();
 
         $total_value = $records->sum('current_price');
-/*         return Pdf::view('labels.print', ['label' => $label, 'records' => $records, 'total_value' => $total_value])
-            ->format('a4')
-            ->landscape()
-            ->name($label->name . '-' . $current . '.pdf'); */
-        $pdf = PDF::loadView('labels.print', ['label' => $label, 'records' => $records, 'total_value' => $total_value]);
-        return $pdf->stream($label->name . '-' . $current . '.pdf');
+        $pdf = Pdf::loadView('labels.print', ['label' => $label, 'records' => $records, 'total_value' => $total_value]);
+
+        return $pdf->stream($label->name.'-'.$current.'.pdf');
     }
 }

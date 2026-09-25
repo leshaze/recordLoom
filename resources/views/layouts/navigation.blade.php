@@ -24,6 +24,7 @@
                     <div class="dropdown-menu">
                         <a href="{{ route('artists.index') }}" class="dropdown-item">All Artists</a>
                         <a href="{{ route('artists.create') }}" class="dropdown-item">Add new Artist</a>
+                    </div>
                 </li>
                 <li class="nav-item dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Labels</a>
@@ -41,14 +42,14 @@
                 </li>
             </ul>
             <div class="mx-auto" style="max-height:5px;">
-            @if (\Session::has('info'))
-            <div class="alert alert-success"> {!! \Session::get('info') !!} </div>
+            @if (session()->has('info'))
+            <div class="alert alert-success"> {{ session('info') }} </div>
             @endif
-            @if (\Session::has('warning'))
-            <div class="alert alert-warning"> {!! \Session::get('warning') !!} </div>
+            @if (session()->has('warning'))
+            <div class="alert alert-warning"> {{ session('warning') }} </div>
             @endif
-            @if (\Session::has('error'))
-            <div class="alert alert-danger"> {!! \Session::get('error') !!} </div>
+            @if (session()->has('error'))
+            <div class="alert alert-danger"> {{ session('error') }} </div>
             @endif
         </div>
 

@@ -2,25 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Platform extends Model
 {
-    /** @use HasFactory<\Database\Factories\PlatformFactory> */
-    use HasFactory;
-
     protected $fillable = [
         'name',
     ];
 
-    public function price()
-    {
-        return $this->belongsTo(PriceHistory::class);
-    }
-
     public function records()
     {
         return $this->hasMany(Record::class);
+    }
+
+    /**
+     * The platform URL, but only if it is a http(s) link and therefore safe to use in an href.
+     */
+    protected function safeUrl(): Attribute
+    {
+        return Attribute::get(
+            fn () => Str::startsWith(Str::lower((string) $this->url), ['http://', 'https://']) ? $this->url : null
+        );
     }
 }

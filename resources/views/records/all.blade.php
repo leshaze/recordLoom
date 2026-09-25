@@ -4,7 +4,7 @@
             <div class="card table-responsive mx-auto">
                 <div class="card-header">{{ __('Records') }} 
                     @if(Route::is('records.selling')) 
-                        <div class="position-absolute top-0 end-0"><a class="btn btn-info btn-sm" href="{{ route('records.print') }}" target="_blank">Export</a>
+                        <div class="position-absolute top-0 end-0"><a class="btn btn-info btn-sm" href="{{ route('records.print') }}" target="_blank" rel="noopener noreferrer">Export</a>
                     </div>
                     @endif
                 </div>
@@ -87,7 +87,7 @@
                                 </td>
                                 <td>
                                     @if ($record->country_id)
-                                        {{ $record->country->name }}
+                                        {{ $record->country?->name }}
                                     @endif
                                 </td>
                                 <td><a href="{{ route('records.edit', ['record' => $record->id]) }}"
@@ -96,7 +96,7 @@
                                 </td>
                                 <td>
                                     <a href="javascript:document.getElementById('delete-record-form{{$record->id}}').submit();"
-                                        class="btn btn-sm" onclick="return confirm('Delete {{ $record->artist->name }} - {{ $record->title }}?')"><i class="bi bi-trash"></i></a>
+                                        class="btn btn-sm" onclick="return confirm(@js('Delete ' . $record->artist->name . ' - ' . $record->title . '?'))"><i class="bi bi-trash"></i></a>
                                     <form id="delete-record-form{{$record->id}}"
                                         action="{{ route('records.destroy', ['record' => $record->id]) }}" method="post"
                                         style="display: none;">

@@ -10,7 +10,6 @@
                         <div class="col-sm-3">
                             <label for="floatingInput">Künstler</label>
                             <input type="text" class="form-control form-control-sm @error('name') border border-danger @enderror" name="artist_name" id="artist_name" placeholder="Künstler" value="{{ $artist->name }}" required>
-                            <input type="hidden" name="id" id="id" value="{{ $artist->id }}">
                         </div>
                     </div>
                     <div class="row p-2">

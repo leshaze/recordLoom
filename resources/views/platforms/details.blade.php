@@ -6,7 +6,7 @@
                     <div> {{ $platform->name }} - {{ $total_value }} €<a href="{{ route('platforms.edit', ['platform' => $platform->id]) }}"
                             class="btn btn-sm"><i class="bi bi-pencil-square"></i></a>
                         <a href="javascript:document.getElementById('delete-platform-form').submit();" class="btn btn-sm"
-                            onclick="return confirm('Delete {{ $platform->name }}?')"><i class="bi bi-trash"></i></a>
+                            onclick="return confirm(@js('Delete ' . $platform->name . '?'))"><i class="bi bi-trash"></i></a>
                         <form id="delete-platform-form" action="{{ route('platforms.destroy', ['platform' => $platform->id]) }}"
                             method="post" style="display: none;">
                             @method('DELETE')

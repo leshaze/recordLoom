@@ -41,8 +41,8 @@
                             @endif
                         </td>
                         <td>
-                            @if ($platform->url)
-                            <a href="{{ $platform->url }}" target="_blank">{{ $platform->url }}</a>
+                            @if ($platform->safe_url)
+                            <a href="{{ $platform->safe_url }}" target="_blank" rel="noopener noreferrer">{{ $platform->url }}</a>
                             @endif
                         </td>
                     </tr>

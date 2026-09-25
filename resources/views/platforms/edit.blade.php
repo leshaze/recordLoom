@@ -10,7 +10,6 @@
                         <div class="col-sm-3">
                             <label for="floatingInput">Platform</label>
                             <input type="text" class="form-control form-control-sm @error('name') border border-danger @enderror" name="platform_name" id="platform_name" placeholder="Platform" value="{{ $platform->name }}" required>
-                            <input type="hidden" name="id" id="id" value="{{ $platform->id }}">
                         </div>
                     </div>
                     <div class="row p-2">
