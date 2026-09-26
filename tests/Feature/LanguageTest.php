@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\Artist;
+use App\Models\Edition;
 use App\Models\Label;
 use App\Models\Record;
+use Illuminate\Http\UploadedFile;
 
 function languageRecord(): Record
 {
@@ -100,4 +102,38 @@ test('all pages render in both languages', function () {
 test('error pages follow the browser language', function () {
     $this->withHeader('Accept-Language', 'en-GB')->get('/does-not-exist')->assertNotFound()->assertSee('Page not found');
     $this->withHeader('Accept-Language', 'de-DE')->get('/does-not-exist')->assertNotFound()->assertSee('Seite nicht gefunden');
+});
+
+test('zusatzinfos are shown in the selected language', function () {
+    $record = languageRecord();
+    $limited = Edition::firstWhere('name', 'Limitierte Auflage');
+    $own = Edition::create(['name' => 'Nur Deutsch']);
+    $record->editions()->attach([$limited->id, $own->id]);
+
+    $this->withHeader('Accept-Language', 'en')->get(route('records.show', $record))
+        ->assertSee('Limited edition')
+        ->assertDontSee('Limitierte Auflage')
+        ->assertSee('Nur Deutsch');
+
+    $this->withHeader('Accept-Language', 'de')->get(route('records.show', $record))
+        ->assertSee('Limitierte Auflage')
+        ->assertDontSee('Limited edition');
+});
+
+test('the english name of a zusatzinfo can be maintained', function () {
+    $this->post(route('editions.store'), ['name' => 'Promo-Pressung', 'name_en' => 'Promo pressing'])->assertRedirect();
+    $edition = Edition::firstWhere('name', 'Promo-Pressung');
+    expect($edition->name_en)->toBe('Promo pressing');
+
+    $this->put(route('editions.update', $edition), ['name' => 'Promo-Pressung', 'name_en' => ''])->assertRedirect();
+    expect($edition->fresh()->name_en)->toBeNull();
+});
+
+test('csv import finds zusatzinfos by their english name', function () {
+    $csv = "Art;Künstler;Titel;Label;Zusatzinfos\nLP;Can;Soon Over Babaluma;UA;First pressing\n";
+    $this->post(route('records.import.store'), ['file' => UploadedFile::fake()->createWithContent('i.csv', $csv)]);
+
+    $record = Record::firstWhere('title', 'Soon Over Babaluma');
+    expect($record->editions->pluck('name')->all())->toBe(['Erstpressung'])
+        ->and(Edition::where('name', 'First pressing')->exists())->toBeFalse();
 });

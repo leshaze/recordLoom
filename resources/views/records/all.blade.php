@@ -65,7 +65,7 @@
                     <select name="edition" id="filter-edition" class="form-select form-select-sm" data-auto-submit>
                         <option value="">{{ __('Alle') }}</option>
                         @foreach ($editions as $edition)
-                            <option value="{{ $edition->id }}" @selected($v['edition'] === $edition->id)>{{ $edition->name }}</option>
+                            <option value="{{ $edition->id }}" @selected($v['edition'] === $edition->id)>{{ $edition->label }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -124,7 +124,7 @@
                                     <td>
                                         <a href="{{ route('records.show', $record) }}" class="fw-semibold">{{ $record->title }}</a>
                                         @foreach ($record->editions as $edition)
-                                            <span class="badge text-bg-dark border fw-normal">{{ $edition->name }}</span>
+                                            <span class="badge text-bg-dark border fw-normal">{{ $edition->label }}</span>
                                         @endforeach
                                         @if ($record->selling && ! $record->sold) <span class="badge text-bg-info fw-normal">{{ __('Verkauf') }}</span> @endif
                                         @if ($record->sold) <span class="badge text-bg-secondary fw-normal">{{ __('Verkauft') }}</span> @endif
@@ -174,7 +174,7 @@
                                     @if ($record->sold) <span class="badge text-bg-secondary">{{ __('Verkauft') }}</span>
                                     @elseif ($record->selling) <span class="badge text-bg-info">{{ __('Verkauf') }}</span> @endif
                                     @foreach ($record->editions as $edition)
-                                        <span class="badge text-bg-dark border">{{ $edition->name }}</span>
+                                        <span class="badge text-bg-dark border">{{ $edition->label }}</span>
                                     @endforeach
                                 </div>
                             </div>

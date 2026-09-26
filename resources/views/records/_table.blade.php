@@ -27,7 +27,7 @@
                             <td>
                                 <a href="{{ route('records.show', $record) }}" class="fw-semibold">{{ $record->title }}</a>
                                 @foreach ($record->editions as $edition)
-                                    <span class="badge text-bg-dark border fw-normal">{{ $edition->name }}</span>
+                                    <span class="badge text-bg-dark border fw-normal">{{ $edition->label }}</span>
                                 @endforeach
                             </td>
                             <td><a href="{{ route('labels.show', $record->label_id) }}">{{ $record->label->name }}</a></td>

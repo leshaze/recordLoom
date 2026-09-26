@@ -42,6 +42,9 @@ Texts are written in German in the code (`__('Alle Platten')`), the English tran
 `lang/en.json`. A test fails when a text has no English translation.
 CSV column names stay German in both languages, so exported files can always be imported again.
 
+Data (artists, notes …) is shown as entered. Only the Zusatzinfos have an optional English name,
+maintained on their page; without it the German name is shown.
+
 ### Open issues
 
 - tbd

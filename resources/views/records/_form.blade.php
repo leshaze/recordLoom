@@ -53,7 +53,7 @@
                 <div class="form-check form-check-inline">
                     <input class="form-check-input" type="checkbox" name="editions[]" id="edition-{{ $edition->id }}"
                         value="{{ $edition->id }}" @checked($selectedEditions->contains($edition->id))>
-                    <label class="form-check-label" for="edition-{{ $edition->id }}">{{ $edition->name }}</label>
+                    <label class="form-check-label" for="edition-{{ $edition->id }}">{{ $edition->label }}</label>
                 </div>
             @empty
                 <span class="small text-body-secondary">{{ __('Noch keine Zusatzinfos angelegt.') }}</span>

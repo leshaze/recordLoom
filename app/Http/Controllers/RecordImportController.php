@@ -111,7 +111,8 @@ class RecordImportController extends Controller
         return collect(explode(',', $names))
             ->map(fn ($name) => trim($name))
             ->filter()
-            ->map(fn ($name) => Edition::firstOrCreate(['name' => $name])->id)
+            ->map(fn ($name) => (Edition::where('name', $name)->orWhere('name_en', $name)->first()
+                ?? Edition::create(['name' => $name]))->id)
             ->unique()
             ->values()
             ->all();
