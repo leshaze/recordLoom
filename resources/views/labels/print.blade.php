@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>RecordLoom</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -81,7 +81,7 @@
 
 <body>
     <main class="m-2">
-        <h2 class="text-center">{{ $label->name }} - {{ $total_value }} €</h2>
+        <h2 class="text-center">{{ $label->name }} – {{ \App\Support\Format::euro($total_value ?: 0) }}</h2>
         <div class="row">
             <div class="col-sm-12">
                 @if(!empty($records) && $records->count())
@@ -89,18 +89,18 @@
                 <p> @endif
                 <table class=" small table">
                     <tr>
-                        <th>Kind</th>
-                        <th>Künstler</th>
-                        <th>Title</th>
-                        <th>Cover</th>
-                        <th>Media</th>
-                        <th>Katalog-Nr.</th>
-                        <th>Matrix-Nr.</th>
-                        <th>Archiv-Nr.</th>
-                        <th>Barcode</th>
-                        <th>Aktueller Preis</th>
-                        <th>Erscheinungsjahr</th>
-                        <th>Herkunftsland</th>
+                        <th>{{ __('Art') }}</th>
+                        <th>{{ __('Künstler') }}</th>
+                        <th>{{ __('Titel') }}</th>
+                        <th>{{ __('Cover') }}</th>
+                        <th>{{ __('Media') }}</th>
+                        <th>{{ __('Katalog-Nr.') }}</th>
+                        <th>{{ __('Matrix-Nr.') }}</th>
+                        <th>{{ __('Archiv-Nr.') }}</th>
+                        <th>{{ __('Barcode') }}</th>
+                        <th>{{ __('Aktueller Preis') }}</th>
+                        <th>{{ __('Erscheinungsjahr') }}</th>
+                        <th>{{ __('Herkunftsland') }}</th>
                     </tr>
                     @foreach($records as $record)
                     <tr>
@@ -113,14 +113,14 @@
                         <td>{{ $record->matrix_number}}</td>
                         <td>{{ $record->archive_number}}</td>
                         <td>{{ $record->barcode}}</td>
-                        <td>@if($record->current_price) {{ $record->current_price}} € @endif</td>
+                        <td>{{ \App\Support\Format::euro($record->current_price) }}</td>
                         <td>{{ $record->release_year }}</td>
                         <td>{{ $record->country?->name }}</td>
                     </tr>
                     @endforeach
                 </table>
                 @else
-                There is no data yet.
+                {{ __('Keine Einträge vorhanden.') }}
                 @endif
             </div>
 

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>RecordLoom</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -81,25 +81,25 @@
 
 <body>
     <main class="m-2">
-        <h2 class="text-center">{{ __('Records') }}</h2>
+        <h2 class="text-center">{{ __('Verkaufsliste') }} – {{ \App\Support\Format::date(now()) }}</h2>
         <div class="row">
             <div class="col-sm-12">
                 @if(!empty($records) && $records->count())
                 <table class=" small table">
                     <tr>
-                        <th>Kind</th>
-                        <th>Künstler</th>
-                        <th>Title</th>
-                        <th>Cover</th>
-                        <th>Media</th>
-                        <!-- <th>Katalog-Nr.</th> -->
-                        <th>Matrix-Nr.</th>
-                        <!-- <th>Archiv-Nr.</th> -->
-                        <!-- <th>Barcode</th> -->
-                        <!-- <th>Aktueller Preis</th> -->
-                        <th>Erscheinungsjahr</th>
-                        <th>Herkunftsland</th>
-                        <th>Notiz</th>
+                        <th>{{ __('Art') }}</th>
+                        <th>{{ __('Künstler') }}</th>
+                        <th>{{ __('Titel') }}</th>
+                        <th>{{ __('Cover') }}</th>
+                        <th>{{ __('Media') }}</th>
+                        <!-- <th>{{ __('Katalog-Nr.') }}</th> -->
+                        <th>{{ __('Matrix-Nr.') }}</th>
+                        <!-- <th>{{ __('Archiv-Nr.') }}</th> -->
+                        <!-- <th>{{ __('Barcode') }}</th> -->
+                        <!-- <th>{{ __('Aktueller Preis') }}</th> -->
+                        <th>{{ __('Erscheinungsjahr') }}</th>
+                        <th>{{ __('Herkunftsland') }}</th>
+                        <th>{{ __('Notiz') }}</th>
                     </tr>
                     @foreach($records as $record)
                     <tr>
@@ -120,7 +120,7 @@
                     @endforeach
                 </table>
                 @else
-                There is no data yet.
+                {{ __('Keine Einträge vorhanden.') }}
                 @endif
             </div>
 

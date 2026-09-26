@@ -60,7 +60,7 @@ class RecordController extends Controller
         $record = $saveRecord(new Record, $data, $request->file('cover'));
 
         return redirect()->route('records.show', $record)
-            ->with('info', 'Platte „'.$record->title.'“ von '.$record->artist->name.' wurde angelegt.');
+            ->with('info', __('Platte „:title“ von :artist wurde angelegt.', ['title' => $record->title, 'artist' => $record->artist->name]));
     }
 
     public function show(Record $record)
@@ -87,7 +87,7 @@ class RecordController extends Controller
         $saveRecord($record, $data, $request->file('cover'), $request->boolean('remove_cover'));
 
         return redirect()->route('records.show', $record)
-            ->with('info', 'Platte „'.$record->title.'“ von '.$record->artist->name.' wurde gespeichert.');
+            ->with('info', __('Platte „:title“ von :artist wurde gespeichert.', ['title' => $record->title, 'artist' => $record->artist->name]));
     }
 
     public function destroy(Record $record)
@@ -97,7 +97,7 @@ class RecordController extends Controller
         $record->delete();
 
         return redirect()->route('records.index')
-            ->with('info', 'Platte „'.$record->title.'“ von '.$record->artist->name.' wurde gelöscht.');
+            ->with('info', __('Platte „:title“ von :artist wurde gelöscht.', ['title' => $record->title, 'artist' => $record->artist->name]));
     }
 
     /**
@@ -119,7 +119,7 @@ class RecordController extends Controller
 
         $pdf = Pdf::loadView('records.print', ['records' => $records]);
 
-        return $pdf->stream('Verkaufsliste -'.$current.'.pdf');
+        return $pdf->stream(__('Verkaufsliste').' '.$current.'.pdf');
     }
 
     /**

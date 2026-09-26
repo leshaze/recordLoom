@@ -21,29 +21,29 @@ class EditionController extends Controller
         $data = $request->validate(
             ['name' => ['required', 'string', 'max:100', 'unique:editions,name']],
             [],
-            ['name' => 'Name'],
+            ['name' => __('Name')],
         );
 
         $edition = Edition::create($data);
 
-        return redirect()->route('editions.index')->with('info', 'Zusatzinfo „'.$edition->name.'“ wurde angelegt.');
+        return redirect()->route('editions.index')->with('info', __('Zusatzinfo „:name“ wurde angelegt.', ['name' => $edition->name]));
     }
 
     public function update(Request $request, Edition $edition)
     {
         $data = $request->validateWithBag('edition'.$edition->id, [
             'name' => ['required', 'string', 'max:100', Rule::unique('editions', 'name')->ignore($edition)],
-        ], [], ['name' => 'Name']);
+        ], [], ['name' => __('Name')]);
 
         $edition->update($data);
 
-        return redirect()->route('editions.index')->with('info', 'Zusatzinfo „'.$edition->name.'“ wurde gespeichert.');
+        return redirect()->route('editions.index')->with('info', __('Zusatzinfo „:name“ wurde gespeichert.', ['name' => $edition->name]));
     }
 
     public function destroy(Edition $edition)
     {
         $edition->delete();
 
-        return redirect()->route('editions.index')->with('info', 'Zusatzinfo „'.$edition->name.'“ wurde gelöscht.');
+        return redirect()->route('editions.index')->with('info', __('Zusatzinfo „:name“ wurde gelöscht.', ['name' => $edition->name]));
     }
 }

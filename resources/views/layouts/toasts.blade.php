@@ -3,7 +3,7 @@
         ['success', 'bi-check-circle', session('info')],
         ['warning', 'bi-exclamation-triangle', session('warning')],
         ['danger', 'bi-x-circle', session('error')],
-        ['danger', 'bi-x-circle', $errors->any() ? 'Bitte die markierten Eingaben prüfen.' : null],
+        ['danger', 'bi-x-circle', $errors->any() ? __('Bitte die markierten Eingaben prüfen.') : null],
     ])->filter(fn ($message) => filled($message[2]));
 @endphp
 
@@ -15,7 +15,7 @@
                 <div class="d-flex">
                     <div class="toast-body"><i class="bi {{ $icon }} me-1"></i> {{ $text }}</div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                        aria-label="Schließen"></button>
+                        aria-label="{{ __('Schließen') }}"></button>
                 </div>
             </div>
         @endforeach

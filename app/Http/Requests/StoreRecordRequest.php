@@ -17,17 +17,17 @@ class StoreRecordRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'kind' => 'Art',
-            'artist_name' => 'Künstler',
-            'title' => 'Titel',
-            'label_name' => 'Label',
-            'current_price' => 'Aktueller Preis',
-            'buy_price' => 'Kaufpreis',
-            'sold_price' => 'Verkaufspreis',
-            'release_year' => 'Erscheinungsjahr',
-            'reissue_year' => 'Jahr der Neuauflage',
-            'sold_on' => 'Verkaufsdatum',
-            'cover' => 'Cover',
+            'kind' => __('Art'),
+            'artist_name' => __('Künstler'),
+            'title' => __('Titel'),
+            'label_name' => __('Label'),
+            'current_price' => __('Aktueller Preis'),
+            'buy_price' => __('Kaufpreis'),
+            'sold_price' => __('Verkaufspreis'),
+            'release_year' => __('Erscheinungsjahr'),
+            'reissue_year' => __('Jahr der Neuauflage'),
+            'sold_on' => __('Verkaufsdatum'),
+            'cover' => __('Cover'),
         ];
     }
 

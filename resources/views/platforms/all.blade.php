@@ -1,25 +1,25 @@
-<x-app-layout title="Anbieter">
+<x-app-layout title="{{ __('Anbieter') }}">
     <div class="container">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <h1 class="h3 mb-0">Anbieter <small class="text-body-secondary fs-6">{{ $platforms->total() }}</small></h1>
-            <a class="btn btn-sm btn-primary" href="{{ route('platforms.create') }}"><i class="bi bi-plus-lg"></i> Neuer Anbieter</a>
+            <h1 class="h3 mb-0">{{ __('Anbieter') }} <small class="text-body-secondary fs-6">{{ $platforms->total() }}</small></h1>
+            <a class="btn btn-sm btn-primary" href="{{ route('platforms.create') }}"><i class="bi bi-plus-lg"></i> {{ __('Neuer Anbieter') }}</a>
         </div>
         @if ($platforms->isEmpty())
-            <div class="card card-body">Noch keine Einträge vorhanden.</div>
+            <div class="card card-body">{{ __('Noch keine Einträge vorhanden.') }}</div>
         @else
             <div class="card">
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle small mb-0">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th class="text-end">LPs</th>
-                                <th class="text-end">CDs</th>
-                                <th class="text-end">Wert LPs</th>
-                                <th class="text-end">Wert CDs</th>
-                                <th>Beschreibung</th>
-                                <th>URL</th>
-                                <th class="text-end">Aktionen</th>
+                                <th>{{ __('Name') }}</th>
+                                <th class="text-end">{{ __('LPs') }}</th>
+                                <th class="text-end">{{ __('CDs') }}</th>
+                                <th class="text-end">{{ __('Wert LPs') }}</th>
+                                <th class="text-end">{{ __('Wert CDs') }}</th>
+                                <th>{{ __('Beschreibung') }}</th>
+                                <th>{{ __('URL') }}</th>
+                                <th class="text-end">{{ __('Aktionen') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -38,8 +38,8 @@
                                     <td>{{ $platform->description }}</td>
                                     <td>@if ($platform->safe_url)<a href="{{ $platform->safe_url }}" target="_blank" rel="noopener noreferrer">{{ $platform->url }}</a>@endif</td>
                                     <td class="text-end text-nowrap">
-                                        <a href="{{ route('platforms.edit', $platform) }}" class="btn btn-sm btn-outline-primary" title="Bearbeiten" aria-label="Bearbeiten"><i class="bi bi-pencil-square"></i></a>
-                                        <x-delete-button :action="route('platforms.destroy', $platform)" :message="'Anbieter „'.$platform->name.'“ wirklich löschen?'" />
+                                        <a href="{{ route('platforms.edit', $platform) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Bearbeiten') }}" aria-label="{{ __('Bearbeiten') }}"><i class="bi bi-pencil-square"></i></a>
+                                        <x-delete-button :action="route('platforms.destroy', $platform)" :message="__('Anbieter „:name“ wirklich löschen?', ['name' => $platform->name])" />
                                     </td>
                                 </tr>
                             @endforeach

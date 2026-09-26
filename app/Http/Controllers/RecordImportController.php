@@ -24,7 +24,7 @@ class RecordImportController extends Controller
 
     public function store(Request $request, SaveRecord $saveRecord)
     {
-        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:10240']], [], ['file' => 'Datei']);
+        $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:10240']], [], ['file' => __('Datei')]);
 
         $rules = collect((new StoreRecordRequest)->rules())
             ->except(['cover', 'editions', 'editions.*', 'artist_id', 'label_id', 'country_id', 'platform_id'])
@@ -49,7 +49,7 @@ class RecordImportController extends Controller
             $data = $this->normalize($row);
             $validator = Validator::make($data, $rules, [], (new StoreRecordRequest)->attributes());
             if ($validator->fails()) {
-                $errors[] = 'Zeile '.$line.': '.implode(' ', $validator->errors()->all());
+                $errors[] = __('Zeile :line', ['line' => $line]).': '.implode(' ', $validator->errors()->all());
 
                 continue;
             }
@@ -63,9 +63,9 @@ class RecordImportController extends Controller
             $imported++;
         }
 
-        $message = $imported.' '.($imported === 1 ? 'Platte' : 'Platten').' importiert.';
+        $message = trans_choice(':count Platte importiert.|:count Platten importiert.', $imported);
         if ($skipped) {
-            $message .= ' '.count($skipped).' Zeile(n) übersprungen, weil die ID schon existiert.';
+            $message .= ' '.trans_choice(':count Zeile übersprungen, weil die ID schon existiert.|:count Zeilen übersprungen, weil die ID schon existiert.', count($skipped));
         }
 
         return redirect()->route('records.import')

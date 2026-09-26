@@ -1,24 +1,24 @@
-<x-app-layout title="Labels">
+<x-app-layout title="{{ __('Labels') }}">
     <div class="container">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <h1 class="h3 mb-0">Labels <small class="text-body-secondary fs-6">{{ $labels->total() }}</small></h1>
-            <a class="btn btn-sm btn-primary" href="{{ route('labels.create') }}"><i class="bi bi-plus-lg"></i> Neues Label</a>
+            <h1 class="h3 mb-0">{{ __('Labels') }} <small class="text-body-secondary fs-6">{{ $labels->total() }}</small></h1>
+            <a class="btn btn-sm btn-primary" href="{{ route('labels.create') }}"><i class="bi bi-plus-lg"></i> {{ __('Neues Label') }}</a>
         </div>
         @if ($labels->isEmpty())
-            <div class="card card-body">Noch keine Einträge vorhanden.</div>
+            <div class="card card-body">{{ __('Noch keine Einträge vorhanden.') }}</div>
         @else
             <div class="card">
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle small mb-0">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th class="text-end">LPs</th>
-                                <th class="text-end">CDs</th>
-                                <th class="text-end">Wert LPs</th>
-                                <th class="text-end">Wert CDs</th>
-                                <th>Beschreibung</th>
-                                <th class="text-end">Aktionen</th>
+                                <th>{{ __('Name') }}</th>
+                                <th class="text-end">{{ __('LPs') }}</th>
+                                <th class="text-end">{{ __('CDs') }}</th>
+                                <th class="text-end">{{ __('Wert LPs') }}</th>
+                                <th class="text-end">{{ __('Wert CDs') }}</th>
+                                <th>{{ __('Beschreibung') }}</th>
+                                <th class="text-end">{{ __('Aktionen') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -36,8 +36,8 @@
                                     <td class="text-end text-nowrap">{{ \App\Support\Format::euro($cds->sum('current_price') ?: null) }}</td>
                                     <td>{{ $label->description }}</td>
                                     <td class="text-end text-nowrap">
-                                        <a href="{{ route('labels.edit', $label) }}" class="btn btn-sm btn-outline-primary" title="Bearbeiten" aria-label="Bearbeiten"><i class="bi bi-pencil-square"></i></a>
-                                        <x-delete-button :action="route('labels.destroy', $label)" :message="'Label „'.$label->name.'“ wirklich löschen?'" />
+                                        <a href="{{ route('labels.edit', $label) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Bearbeiten') }}" aria-label="{{ __('Bearbeiten') }}"><i class="bi bi-pencil-square"></i></a>
+                                        <x-delete-button :action="route('labels.destroy', $label)" :message="__('Label „:name“ wirklich löschen?', ['name' => $label->name])" />
                                     </td>
                                 </tr>
                             @endforeach

@@ -4,6 +4,6 @@
 <button type="button" {{ $attributes->merge(['class' => 'btn btn-sm btn-outline-danger']) }}
     data-bs-toggle="modal" data-bs-target="#deleteModal"
     data-delete-action="{{ $action }}" data-delete-message="{{ $message }}"
-    title="Löschen" aria-label="Löschen">
+    title="{{ __('Löschen') }}" aria-label="{{ __('Löschen') }}">
     <i class="bi bi-trash"></i>@if ($label) {{ $label }}@endif
 </button>

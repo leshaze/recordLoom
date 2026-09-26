@@ -37,7 +37,7 @@ class ArtistController extends Controller
         $name = $request->validated('artist_name');
 
         if (Artist::where('name', $name)->exists()) {
-            return redirect()->route('artists.create')->with('error', 'Künstler „'.$name.'“ ist bereits vorhanden.');
+            return redirect()->route('artists.create')->with('error', __('Künstler „:name“ ist bereits vorhanden.', ['name' => $name]));
         }
 
         $artist = new Artist;
@@ -45,7 +45,7 @@ class ArtistController extends Controller
         $artist->description = $request->validated('description');
         $artist->save();
 
-        return redirect()->route('artists.create')->with('info', 'Künstler „'.$artist->name.'“ wurde angelegt.');
+        return redirect()->route('artists.create')->with('info', __('Künstler „:name“ wurde angelegt.', ['name' => $artist->name]));
     }
 
     public function edit(Artist $artist)
@@ -59,18 +59,18 @@ class ArtistController extends Controller
         $artist->description = $request->validated('description');
         $artist->save();
 
-        return redirect()->route('artists.index')->with('info', 'Künstler „'.$artist->name.'“ wurde gespeichert.');
+        return redirect()->route('artists.index')->with('info', __('Künstler „:name“ wurde gespeichert.', ['name' => $artist->name]));
     }
 
     public function destroy(Artist $artist)
     {
         if ($artist->records()->exists()) {
-            return redirect()->route('artists.index')->with('error', 'Künstler „'.$artist->name.'“ kann nicht gelöscht werden, weil noch Platten zugeordnet sind.');
+            return redirect()->route('artists.index')->with('error', __('Künstler „:name“ kann nicht gelöscht werden, weil noch Platten zugeordnet sind.', ['name' => $artist->name]));
         }
 
         $artist->delete();
 
-        return redirect()->route('artists.index')->with('info', 'Künstler „'.$artist->name.'“ wurde gelöscht.');
+        return redirect()->route('artists.index')->with('info', __('Künstler „:name“ wurde gelöscht.', ['name' => $artist->name]));
     }
 
     public function print(Artist $artist)

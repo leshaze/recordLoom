@@ -4,13 +4,13 @@
             <div>
                 <h1 class="h3 mb-0">{{ $artist->name }}</h1>
                 <div class="text-body-secondary">
-                    {{ $records->count() }} {{ $records->count() === 1 ? 'Platte' : 'Platten' }} · Wert {{ \App\Support\Format::euro($total_value ?: 0) }}
+                    {{ trans_choice(':count Platte|:count Platten', $records->count()) }} · {{ __('Wert') }} {{ \App\Support\Format::euro($total_value ?: 0) }}
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <a href="{{ route('artists.print', $artist) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-pdf"></i> PDF</a>
-                <a href="{{ route('artists.edit', $artist) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> Bearbeiten</a>
-                <x-delete-button :action="route('artists.destroy', $artist)" label="Löschen" :message="'Künstler „'.$artist->name.'“ wirklich löschen?'" />
+                <a href="{{ route('artists.print', $artist) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-pdf"></i> {{ __('PDF') }}</a>
+                <a href="{{ route('artists.edit', $artist) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> {{ __('Bearbeiten') }}</a>
+                <x-delete-button :action="route('artists.destroy', $artist)" :label="__('Löschen')" :message="__('Künstler „:name“ wirklich löschen?', ['name' => $artist->name])" />
             </div>
         </div>
         @if ($artist->description)

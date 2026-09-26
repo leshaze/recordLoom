@@ -32,13 +32,13 @@
                 @csrf
                 @method('DELETE')
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="deleteModalTitle">Wirklich löschen?</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                    <h1 class="modal-title fs-5" id="deleteModalTitle">{{ __('Wirklich löschen?') }}</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Schließen') }}"></button>
                 </div>
                 <div class="modal-body" id="deleteModalText"></div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Löschen</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Abbrechen') }}</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> {{ __('Löschen') }}</button>
                 </div>
             </form>
         </div>

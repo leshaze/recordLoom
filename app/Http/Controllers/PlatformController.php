@@ -27,7 +27,7 @@ class PlatformController extends Controller
         $name = $request->validated('platform_name');
 
         if (Platform::where('name', $name)->exists()) {
-            return redirect()->route('platforms.create')->with('error', 'Anbieter „'.$name.'“ ist bereits vorhanden.');
+            return redirect()->route('platforms.create')->with('error', __('Anbieter „:name“ ist bereits vorhanden.', ['name' => $name]));
         }
 
         $platform = new Platform;
@@ -36,7 +36,7 @@ class PlatformController extends Controller
         $platform->description = $request->validated('description');
         $platform->save();
 
-        return redirect()->route('platforms.create')->with('info', 'Anbieter „'.$platform->name.'“ wurde angelegt.');
+        return redirect()->route('platforms.create')->with('info', __('Anbieter „:name“ wurde angelegt.', ['name' => $platform->name]));
     }
 
     public function show(Platform $platform)
@@ -59,17 +59,17 @@ class PlatformController extends Controller
         $platform->description = $request->validated('description');
         $platform->save();
 
-        return redirect()->route('platforms.index')->with('info', 'Anbieter „'.$platform->name.'“ wurde gespeichert.');
+        return redirect()->route('platforms.index')->with('info', __('Anbieter „:name“ wurde gespeichert.', ['name' => $platform->name]));
     }
 
     public function destroy(Platform $platform)
     {
         if ($platform->records()->exists()) {
-            return redirect()->route('platforms.index')->with('error', 'Anbieter „'.$platform->name.'“ kann nicht gelöscht werden, weil noch Platten zugeordnet sind.');
+            return redirect()->route('platforms.index')->with('error', __('Anbieter „:name“ kann nicht gelöscht werden, weil noch Platten zugeordnet sind.', ['name' => $platform->name]));
         }
 
         $platform->delete();
 
-        return redirect()->route('platforms.index')->with('info', 'Anbieter „'.$platform->name.'“ wurde gelöscht.');
+        return redirect()->route('platforms.index')->with('info', __('Anbieter „:name“ wurde gelöscht.', ['name' => $platform->name]));
     }
 }

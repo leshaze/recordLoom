@@ -1,17 +1,17 @@
-<x-app-layout title="Übersicht">
+<x-app-layout title="{{ __('Übersicht') }}">
     <div class="container">
-        <h1 class="h3 mb-4">Willkommen bei RecordLoom</h1>
+        <h1 class="h3 mb-4">{{ __('Willkommen bei RecordLoom') }}</h1>
 
         @php
             $tiles = [
-                ['Platten im Bestand', $count, 'bi-vinyl', route('records.index', ['status' => 'available'])],
-                ['Wert im Bestand', number_format((float) $total_value, 2, ',', '.').' €', 'bi-cash-coin', null],
-                ['LPs', $count_lp, 'bi-disc', route('records.index', ['kind' => 'LP', 'status' => 'available'])],
-                ['CDs', $count_cd, 'bi-disc-fill', route('records.index', ['kind' => 'CD', 'status' => 'available'])],
-                ['Zum Verkauf vorgemerkt', $count_selling, 'bi-tag', route('records.index', ['status' => 'selling'])],
-                ['Verkauft', $count_sold, 'bi-bag-check', route('records.index', ['status' => 'sold'])],
-                ['Künstler', $count_artist, 'bi-person', route('artists.index')],
-                ['Labels', $count_label, 'bi-building', route('labels.index')],
+                [__('Platten im Bestand'), $count, 'bi-vinyl', route('records.index', ['status' => 'available'])],
+                [__('Wert im Bestand'), \App\Support\Format::euro($total_value ?: 0), 'bi-cash-coin', null],
+                [__('LPs'), $count_lp, 'bi-disc', route('records.index', ['kind' => 'LP', 'status' => 'available'])],
+                [__('CDs'), $count_cd, 'bi-disc-fill', route('records.index', ['kind' => 'CD', 'status' => 'available'])],
+                [__('Zum Verkauf vorgemerkt'), $count_selling, 'bi-tag', route('records.index', ['status' => 'selling'])],
+                [__('Verkauft'), $count_sold, 'bi-bag-check', route('records.index', ['status' => 'sold'])],
+                [__('Künstler (Menü)'), $count_artist, 'bi-person', route('artists.index')],
+                [__('Labels'), $count_label, 'bi-building', route('labels.index')],
             ];
         @endphp
 
@@ -23,7 +23,7 @@
                             <div class="text-body-secondary small"><i class="bi {{ $icon }}"></i> {{ $label }}</div>
                             <div class="fs-3 fw-semibold">{{ $value }}</div>
                             @if ($url)
-                                <a href="{{ $url }}" class="stretched-link" aria-label="{{ $label }} anzeigen"></a>
+                                <a href="{{ $url }}" class="stretched-link" aria-label="{{ __(':label anzeigen', ['label' => $label]) }}"></a>
                             @endif
                         </div>
                     </div>
@@ -33,8 +33,8 @@
 
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Zuletzt hinzugefügt</span>
-                <a href="{{ route('records.index', ['sort' => 'created', 'dir' => 'desc']) }}" class="small">Alle anzeigen</a>
+                <span>{{ __('Zuletzt hinzugefügt') }}</span>
+                <a href="{{ route('records.index', ['sort' => 'created', 'dir' => 'desc']) }}" class="small">{{ __('Alle anzeigen') }}</a>
             </div>
             @if ($latest->isNotEmpty())
                 <div class="list-group list-group-flush">
@@ -45,12 +45,12 @@
                                 <div class="fw-semibold">{{ $record->title }}</div>
                                 <div class="small text-body-secondary">{{ $record->artist->name }} · {{ $record->kind }}@if ($record->release_year) · {{ $record->release_year }}@endif</div>
                             </div>
-                            <span class="small text-body-secondary">{{ $record->created_at?->format('d.m.Y') }}</span>
+                            <span class="small text-body-secondary">{{ \App\Support\Format::date($record->created_at) }}</span>
                         </a>
                     @endforeach
                 </div>
             @else
-                <div class="card-body">Noch keine Platten erfasst. <a href="{{ route('records.create') }}">Erste Platte anlegen</a></div>
+                <div class="card-body">{{ __('Noch keine Platten erfasst.') }} <a href="{{ route('records.create') }}">{{ __('Erste Platte anlegen') }}</a></div>
             @endif
         </div>
     </div>

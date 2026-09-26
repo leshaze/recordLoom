@@ -1,6 +1,6 @@
 {{-- Compact record table used on the artist, label and platform pages. --}}
 @if ($records->isEmpty())
-    <div class="card card-body">Keine Platten vorhanden.</div>
+    <div class="card card-body">{{ __('Keine Platten vorhanden.') }}</div>
 @else
     <div class="card">
         <div class="table-responsive">
@@ -8,14 +8,14 @@
                 <thead>
                     <tr>
                         <th></th>
-                        <th>Art</th>
-                        <th>Künstler</th>
-                        <th>Titel</th>
-                        <th>Label</th>
-                        <th>Grading</th>
-                        <th>Katalog-Nr.</th>
-                        <th>Jahr</th>
-                        <th class="text-end">Preis</th>
+                        <th>{{ __('Art') }}</th>
+                        <th>{{ __('Künstler') }}</th>
+                        <th>{{ __('Titel') }}</th>
+                        <th>{{ __('Label') }}</th>
+                        <th>{{ __('Grading') }}</th>
+                        <th>{{ __('Katalog-Nr.') }}</th>
+                        <th>{{ __('Jahr') }}</th>
+                        <th class="text-end">{{ __('Preis') }}</th>
                     </tr>
                 </thead>
                 <tbody>

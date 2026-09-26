@@ -29,7 +29,7 @@ class LabelController extends Controller
         $name = $request->validated('label_name');
 
         if (Label::where('name', $name)->exists()) {
-            return redirect()->route('labels.create')->with('error', 'Label „'.$name.'“ ist bereits vorhanden.');
+            return redirect()->route('labels.create')->with('error', __('Label „:name“ ist bereits vorhanden.', ['name' => $name]));
         }
 
         $label = new Label;
@@ -37,7 +37,7 @@ class LabelController extends Controller
         $label->description = $request->validated('description');
         $label->save();
 
-        return redirect()->route('labels.create')->with('info', 'Label „'.$label->name.'“ wurde angelegt.');
+        return redirect()->route('labels.create')->with('info', __('Label „:name“ wurde angelegt.', ['name' => $label->name]));
     }
 
     public function show(Label $label)
@@ -59,18 +59,18 @@ class LabelController extends Controller
         $label->description = $request->validated('description');
         $label->save();
 
-        return redirect()->route('labels.index')->with('info', 'Label „'.$label->name.'“ wurde gespeichert.');
+        return redirect()->route('labels.index')->with('info', __('Label „:name“ wurde gespeichert.', ['name' => $label->name]));
     }
 
     public function destroy(Label $label)
     {
         if ($label->records()->exists()) {
-            return redirect()->route('labels.index')->with('error', 'Label „'.$label->name.'“ kann nicht gelöscht werden, weil noch Platten zugeordnet sind.');
+            return redirect()->route('labels.index')->with('error', __('Label „:name“ kann nicht gelöscht werden, weil noch Platten zugeordnet sind.', ['name' => $label->name]));
         }
 
         $label->delete();
 
-        return redirect()->route('labels.index')->with('info', 'Label „'.$label->name.'“ wurde gelöscht.');
+        return redirect()->route('labels.index')->with('info', __('Label „:name“ wurde gelöscht.', ['name' => $label->name]));
     }
 
     public function print(Label $label)

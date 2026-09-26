@@ -32,7 +32,15 @@ php artisan optimize:clear
 php artisan up
 ```
 
-Set `APP_LOCALE=de` in the `.env` for German validation messages.
+### Languages
+
+The app is available in German and English. The language follows the browser; it can be switched
+with DE/EN in the navigation (remembered for the session). German is used when the browser prefers
+neither language. `APP_LOCALE` in the `.env` only sets this fallback.
+
+Texts are written in German in the code (`__('Alle Platten')`), the English translations are in
+`lang/en.json`. A test fails when a text has no English translation.
+CSV column names stay German in both languages, so exported files can always be imported again.
 
 ### Open issues
 

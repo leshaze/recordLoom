@@ -4,15 +4,15 @@
             <div>
                 <h1 class="h3 mb-0">{{ $platform->name }}</h1>
                 <div class="text-body-secondary">
-                    {{ $records->count() }} {{ $records->count() === 1 ? 'Platte' : 'Platten' }} · Wert {{ \App\Support\Format::euro($total_value ?: 0) }}
+                    {{ trans_choice(':count Platte|:count Platten', $records->count()) }} · {{ __('Wert') }} {{ \App\Support\Format::euro($total_value ?: 0) }}
                     @if ($platform->safe_url)
                         · <a href="{{ $platform->safe_url }}" target="_blank" rel="noopener noreferrer">{{ $platform->url }}</a>
                     @endif
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <a href="{{ route('platforms.edit', $platform) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> Bearbeiten</a>
-                <x-delete-button :action="route('platforms.destroy', $platform)" label="Löschen" :message="'Anbieter „'.$platform->name.'“ wirklich löschen?'" />
+                <a href="{{ route('platforms.edit', $platform) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> {{ __('Bearbeiten') }}</a>
+                <x-delete-button :action="route('platforms.destroy', $platform)" :label="__('Löschen')" :message="__('Anbieter „:name“ wirklich löschen?', ['name' => $platform->name])" />
             </div>
         </div>
         @if ($platform->description)
