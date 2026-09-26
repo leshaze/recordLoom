@@ -29,7 +29,7 @@ class LabelController extends Controller
         $name = $request->validated('label_name');
 
         if (Label::where('name', $name)->exists()) {
-            return redirect()->route('labels.create')->with('error', 'Label '.$name.' is already in the database.');
+            return redirect()->route('labels.create')->with('error', 'Label „'.$name.'“ ist bereits vorhanden.');
         }
 
         $label = new Label;
@@ -37,12 +37,12 @@ class LabelController extends Controller
         $label->description = $request->validated('description');
         $label->save();
 
-        return redirect()->route('labels.create')->with('info', 'Label '.$label->name.' added successfully');
+        return redirect()->route('labels.create')->with('info', 'Label „'.$label->name.'“ wurde angelegt.');
     }
 
     public function show(Label $label)
     {
-        $records = $label->records()->with('artist')->get();
+        $records = $label->records()->with(['artist', 'label', 'editions'])->get();
         $total_value = $records->sum('current_price');
 
         return view('labels.details', ['label' => $label, 'records' => $records, 'total_value' => $total_value]);
@@ -59,18 +59,18 @@ class LabelController extends Controller
         $label->description = $request->validated('description');
         $label->save();
 
-        return redirect()->route('labels.index')->with('info', 'Label '.$label->name.' updated successfully');
+        return redirect()->route('labels.index')->with('info', 'Label „'.$label->name.'“ wurde gespeichert.');
     }
 
     public function destroy(Label $label)
     {
         if ($label->records()->exists()) {
-            return redirect()->route('labels.index')->with('error', 'Label '.$label->name.' could not be deleted. ');
+            return redirect()->route('labels.index')->with('error', 'Label „'.$label->name.'“ kann nicht gelöscht werden, weil noch Platten zugeordnet sind.');
         }
 
         $label->delete();
 
-        return redirect()->route('labels.index')->with('info', 'Label '.$label->name.' deleted successfully');
+        return redirect()->route('labels.index')->with('info', 'Label „'.$label->name.'“ wurde gelöscht.');
     }
 
     public function print(Label $label)

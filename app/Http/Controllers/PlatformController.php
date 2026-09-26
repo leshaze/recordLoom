@@ -27,7 +27,7 @@ class PlatformController extends Controller
         $name = $request->validated('platform_name');
 
         if (Platform::where('name', $name)->exists()) {
-            return redirect()->route('platforms.create')->with('error', 'Platform '.$name.' is already in the database');
+            return redirect()->route('platforms.create')->with('error', 'Anbieter „'.$name.'“ ist bereits vorhanden.');
         }
 
         $platform = new Platform;
@@ -36,12 +36,12 @@ class PlatformController extends Controller
         $platform->description = $request->validated('description');
         $platform->save();
 
-        return redirect()->route('platforms.create')->with('info', 'Platform '.$platform->name.'  added successfully');
+        return redirect()->route('platforms.create')->with('info', 'Anbieter „'.$platform->name.'“ wurde angelegt.');
     }
 
     public function show(Platform $platform)
     {
-        $records = $platform->records()->with(['artist', 'label'])->get();
+        $records = $platform->records()->with(['artist', 'label', 'editions'])->get();
         $total_value = $records->sum('current_price');
 
         return view('platforms.details', ['platform' => $platform, 'records' => $records, 'total_value' => $total_value]);
@@ -59,17 +59,17 @@ class PlatformController extends Controller
         $platform->description = $request->validated('description');
         $platform->save();
 
-        return redirect()->route('platforms.index')->with('info', 'Platform '.$platform->name.' updated successfully');
+        return redirect()->route('platforms.index')->with('info', 'Anbieter „'.$platform->name.'“ wurde gespeichert.');
     }
 
     public function destroy(Platform $platform)
     {
         if ($platform->records()->exists()) {
-            return redirect()->route('platforms.index')->with('error', 'Platform '.$platform->name.' could not be deleted. ');
+            return redirect()->route('platforms.index')->with('error', 'Anbieter „'.$platform->name.'“ kann nicht gelöscht werden, weil noch Platten zugeordnet sind.');
         }
 
         $platform->delete();
 
-        return redirect()->route('platforms.index')->with('info', 'Platform '.$platform->name.' deleted successfully');
+        return redirect()->route('platforms.index')->with('info', 'Anbieter „'.$platform->name.'“ wurde gelöscht.');
     }
 }

@@ -2,84 +2,70 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\SaveRecord;
 use App\Http\Requests\StoreRecordRequest;
 use App\Http\Requests\UpdateRecordRequest;
-use App\Models\Artist;
 use App\Models\Country;
+use App\Models\Edition;
 use App\Models\Label;
-use App\Models\Platform;
-use App\Models\PriceHistory;
 use App\Models\Record;
+use App\Support\CoverStorage;
+use App\Support\RecordCsv;
+use App\Support\RecordFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 
 class RecordController extends Controller
 {
     /**
      * Relations shown in the record lists.
      */
-    private const LIST_RELATIONS = ['artist', 'label', 'country'];
+    private const LIST_RELATIONS = ['artist', 'label', 'country', 'editions'];
 
-    public function index()
+    public function index(Request $request)
     {
-        $records = Record::with(self::LIST_RELATIONS)->paginate(15);
+        $filter = new RecordFilter($request);
+        $records = $filter->query()
+            ->with(self::LIST_RELATIONS)
+            ->paginate($filter->values['per_page'])
+            ->withQueryString();
 
-        return view('records.all', ['records' => $records]);
+        return view('records.all', [
+            'records' => $records,
+            'filter' => $filter,
+            'labels' => Label::orderBy('name')->get(['id', 'name']),
+            'countries' => Country::orderBy('name')->get(['id', 'name']),
+            'editions' => Edition::orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
+    /**
+     * The old "For Selling" page is now a filter of the record list.
+     */
     public function selling()
     {
-        $records = $this->sellingQuery()->with(self::LIST_RELATIONS)->paginate(60);
-
-        return view('records.all', ['records' => $records]);
+        return redirect()->route('records.index', ['status' => 'selling']);
     }
 
     public function create()
     {
-        return view('records.create');
+        return view('records.create', ['record' => new Record, 'editions' => Edition::orderBy('name')->get()]);
     }
 
-    public function store(StoreRecordRequest $request)
+    public function store(StoreRecordRequest $request, SaveRecord $saveRecord)
     {
-        $data = $request->validated();
+        $data = [...$request->validated(), 'selling' => $request->boolean('selling')];
+        $record = $saveRecord(new Record, $data, $request->file('cover'));
 
-        $record = new Record;
-        $record->kind = $data['kind'];
-        $record->artist_id = $data['artist_id'] ?? Artist::firstOrCreate(['name' => $data['artist_name']])->id;
-        $record->title = $data['title'];
-        $record->label_id = $data['label_id'] ?? Label::firstOrCreate(['name' => $data['label_name']])->id;
-
-        if (! empty($data['country_name'])) {
-            $record->country_id = $data['country_id'] ?? Country::firstOrCreate(['name' => $data['country_name']])->id;
-        }
-
-        if (! empty($data['platform'])) {
-            $record->platform_id = $data['platform_id'] ?? Platform::firstOrCreate(['name' => $data['platform']])->id;
-        }
-
-        $record->catalog_number = $data['catalog_number'] ?? null;
-        $record->matrix_number = $data['matrix_number'] ?? null;
-        $record->barcode = $data['barcode'] ?? null;
-        $record->release_date = $data['release_date'] ?? null;
-        $record->reissue_date = $data['reissue_date'] ?? null;
-        $record->grading_media = $data['grading_media'] ?? null;
-        $record->grading_cover = $data['grading_cover'] ?? null;
-        $record->current_price = $data['current_price'] ?? null;
-        $record->buy_price = $data['buy_price'] ?? null;
-        $record->archive_number = $data['archive_number'] ?? null;
-        $record->note = $data['note'] ?? null;
-        $record->save();
-
-        if ($record->current_price !== null) {
-            $this->addPriceHistory($record);
-        }
-
-        return redirect()->route('records.index')->with('info', 'Record '.$record->title.' von '.$record->artist->name.' added successfully');
+        return redirect()->route('records.show', $record)
+            ->with('info', 'Platte „'.$record->title.'“ von '.$record->artist->name.' wurde angelegt.');
     }
 
     public function show(Record $record)
     {
+        $record->load(['artist', 'label', 'country', 'platform', 'editions']);
         $prices = $record->prices()->with('platform')->latest()->take(5)->get()->reverse();
 
         return view('records.details', ['record' => $record, 'prices' => $prices]);
@@ -87,70 +73,42 @@ class RecordController extends Controller
 
     public function edit(Record $record)
     {
-        return view('records.edit', ['record' => $record]);
+        return view('records.edit', ['record' => $record, 'editions' => Edition::orderBy('name')->get()]);
     }
 
-    public function update(UpdateRecordRequest $request, Record $record)
+    public function update(UpdateRecordRequest $request, Record $record, SaveRecord $saveRecord)
     {
-        $data = $request->validated();
+        $data = [
+            ...$request->validated(),
+            'selling' => $request->boolean('selling'),
+            'sold' => $request->boolean('sold'),
+            'lost' => $request->boolean('lost'),
+        ];
+        $saveRecord($record, $data, $request->file('cover'), $request->boolean('remove_cover'));
 
-        if (! empty($data['kind'])) {
-            $record->kind = $data['kind'];
-        }
-        $record->artist_id = Artist::firstOrCreate(['name' => $data['artist_name']])->id;
-        $record->title = $data['title'];
-        $record->label_id = Label::firstOrCreate(['name' => $data['label_name']])->id;
-
-        if (! empty($data['country_name'])) {
-            $record->country_id = Country::firstOrCreate(['name' => $data['country_name']])->id;
-        }
-
-        if (! empty($data['platform'])) {
-            $record->platform_id = Platform::firstOrCreate(['name' => $data['platform']])->id;
-        }
-
-        $record->catalog_number = $data['catalog_number'] ?? null;
-        $record->matrix_number = $data['matrix_number'] ?? null;
-        $record->barcode = $data['barcode'] ?? null;
-        $record->release_date = $data['release_date'] ?? null;
-        $record->reissue_date = $data['reissue_date'] ?? null;
-
-        if (isset($data['grading_media'])) {
-            $record->grading_media = $data['grading_media'];
-        }
-        if (isset($data['grading_cover'])) {
-            $record->grading_cover = $data['grading_cover'];
-        }
-
-        $record->current_price = $data['current_price'] ?? null;
-        $record->buy_price = $data['buy_price'] ?? null;
-        $record->archive_number = $data['archive_number'] ?? null;
-        $record->note = $data['note'] ?? null;
-        $record->selling = $request->boolean('selling');
-        $record->sold = $request->boolean('sold');
-        $record->sold_date = $data['sold_date'] ?? null;
-        $record->sold_to = $data['sold_to'] ?? null;
-        $record->sold_price = $data['sold_price'] ?? null;
-        $record->lost = $request->boolean('lost');
-
-        $oldPrice = $record->getOriginal('current_price');
-        $priceChanged = $record->current_price !== null
-            && ($oldPrice === null || (float) $oldPrice !== (float) $record->current_price);
-        $record->save();
-
-        if ($priceChanged) {
-            $this->addPriceHistory($record);
-        }
-
-        return redirect()->route('records.index')->with('info', 'Record '.$record->title.' von '.$record->artist->name.' updated successfully');
+        return redirect()->route('records.show', $record)
+            ->with('info', 'Platte „'.$record->title.'“ von '.$record->artist->name.' wurde gespeichert.');
     }
 
     public function destroy(Record $record)
     {
+        CoverStorage::delete($record);
         $record->prices()->delete();
         $record->delete();
 
-        return redirect()->route('records.index')->with('info', 'Record '.$record->title.' von '.$record->artist->name.' deleted successfully');
+        return redirect()->route('records.index')
+            ->with('info', 'Platte „'.$record->title.'“ von '.$record->artist->name.' wurde gelöscht.');
+    }
+
+    /**
+     * Cover images are stored outside of the public folder and delivered here.
+     */
+    public function cover(Request $request, Record $record)
+    {
+        $path = CoverStorage::path($record, $request->boolean('thumb'));
+        abort_if($path === null, 404);
+
+        return response()->file($path, ['Cache-Control' => 'private, max-age=86400']);
     }
 
     public function print()
@@ -165,6 +123,16 @@ class RecordController extends Controller
     }
 
     /**
+     * CSV export of the (filtered) record list.
+     */
+    public function export(Request $request)
+    {
+        $query = (new RecordFilter($request))->query()->with(['artist', 'label', 'country', 'platform', 'editions']);
+
+        return RecordCsv::download($query, 'recordloom-'.Carbon::now()->format('Y-m-d').'.csv');
+    }
+
+    /**
      * Records that are marked for selling and not yet sold.
      */
     private function sellingQuery(): Builder
@@ -173,14 +141,5 @@ class RecordController extends Controller
             ->where('sold', false)
             ->orderBy('kind', 'ASC')
             ->orderBy('artist_id', 'ASC');
-    }
-
-    private function addPriceHistory(Record $record): void
-    {
-        $priceHistory = new PriceHistory;
-        $priceHistory->price = $record->current_price;
-        $priceHistory->record_id = $record->id;
-        $priceHistory->platform_id = $record->platform_id;
-        $priceHistory->save();
     }
 }

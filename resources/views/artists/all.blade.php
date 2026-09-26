@@ -1,67 +1,51 @@
-<x-app-layout>
+<x-app-layout title="Künstler">
     <div class="container">
-        <div class="wrapper">
-            <!--             {{-- // Variante 1: langer Rahmen, Tabelle links
-            <div class="card table-responsive">
-                <div class="card-header">{{ __('Artists') }}</div>
-                @if (!empty($artists) && $artists->count())
-                <table class="table table-sm small d-inline-flex">
-            // Variante 2: kleiner Rahmen, Tabelle mittig
-            <div class="card table-responsive w-50 mx-auto"> 
-                <div class="card-header">{{ __('Artists') }}</div>
-                @if (!empty($artists) && $artists->count())
-                <table class="table table-sm small" > 
-            // Variante 3: großer Rahmen, Tabelle mittig
-            <div class="card table-responsive"> 
-                <div class="card-header">{{ __('Artists') }}</div>
-                @if (!empty($artists) && $artists->count())
-                <table class="table table-sm small w-auto mx-auto ">
-            // Variante 4: kleiner Rahmen, Tabelle links
-            <div class="card table-responsive"> 
-                <div class="card-header">{{ __('Artists') }}</div>
-                @if (!empty($artists) && $artists->count())
-                <table class="table table-sm small w-auto mx-auto "> --}} -->
-
-            <div class="card table-responsive">
-                <div class="card-header">{{ __('Artists') }}</div>
-                @if (!empty($artists) && $artists->count())
-                <table class="table table-sm small d-inline-flex">
-                    <tr>
-                        <th>Name</th>
-                        <th>Summe LP</th>
-                        <th>Summe CD</th>
-                        <th>Description</th>
-
-                    </tr>
-                    @foreach ($artists as $artist)
-                    <tr>
-                        <td align="left">
-                            <a href="{{ route('artists.show', $artist->id) }}">{{ $artist->name }} </a>
-                        </td>
-                        <td style="text-align: center;">
-                            {{ $records->where('artist_id', $artist->id)->where('kind', 'LP')->sum(function ($record) {
-                                                return $record->current_price;
-                                        }) }} €
-
-                        </td>
-                        <td style="text-align: center;">
-                            {{ $records->where('artist_id', $artist->id)->where('kind', 'CD')->sum(function ($record) {
-                                                return $record->current_price;
-                                        }) }} €
-                        </td>
-                        <td>
-                            @if ($artist->description)
-                            {{ $artist->description }}
-                            @endif
-                        </td>
-                    </tr>
-                    @endforeach
-                </table>
-                @else
-                There is no data yet.
-                @endif
-            </div>
-            {{ $artists->links('pagination::bootstrap-4') }}
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <h1 class="h3 mb-0">Künstler <small class="text-body-secondary fs-6">{{ $artists->total() }}</small></h1>
+            <a class="btn btn-sm btn-primary" href="{{ route('artists.create') }}"><i class="bi bi-plus-lg"></i> Neuer Künstler</a>
         </div>
+        @if ($artists->isEmpty())
+            <div class="card card-body">Noch keine Einträge vorhanden.</div>
+        @else
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle small mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th class="text-end">LPs</th>
+                                <th class="text-end">CDs</th>
+                                <th class="text-end">Wert LPs</th>
+                                <th class="text-end">Wert CDs</th>
+                                <th>Beschreibung</th>
+                                <th class="text-end">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($artists as $artist)
+                                @php
+                                    $own = $records->where('artist_id', $artist->id);
+                                    $lps = $own->where('kind', 'LP');
+                                    $cds = $own->where('kind', 'CD');
+                                @endphp
+                                <tr>
+                                    <td><a href="{{ route('artists.show', $artist) }}" class="fw-semibold">{{ $artist->name }}</a></td>
+                                    <td class="text-end">{{ $lps->count() ?: '' }}</td>
+                                    <td class="text-end">{{ $cds->count() ?: '' }}</td>
+                                    <td class="text-end text-nowrap">{{ \App\Support\Format::euro($lps->sum('current_price') ?: null) }}</td>
+                                    <td class="text-end text-nowrap">{{ \App\Support\Format::euro($cds->sum('current_price') ?: null) }}</td>
+                                    <td>{{ $artist->description }}</td>
+                                    <td class="text-end text-nowrap">
+                                        <a href="{{ route('artists.edit', $artist) }}" class="btn btn-sm btn-outline-primary" title="Bearbeiten" aria-label="Bearbeiten"><i class="bi bi-pencil-square"></i></a>
+                                        <x-delete-button :action="route('artists.destroy', $artist)" :message="'Künstler „'.$artist->name.'“ wirklich löschen?'" />
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="mt-3">{{ $artists->links('pagination::bootstrap-5') }}</div>
+        @endif
     </div>
 </x-app-layout>

@@ -1,28 +1,14 @@
-<x-app-layout>
-    <div class="container">
-        <div class="wrapper flex">
-            <div class="card">
-                <div class="card-header">{{ __('Edit Label') }}</div>
-                <form action="{{ route('labels.update', ['label' => $label->id]) }}" method="post" class="Label" enctype="multipart/form-data">
-                    @method('PUT')
-                    @csrf
-                    <div class="row p-2">
-                        <div class="col-sm-3">
-                            <label for="floatingInput">Label</label>
-                            <input type="text" class="form-control form-control-sm @error('name') border border-danger @enderror" name="label_name" id="label_name" placeholder="Label" value="{{ $label->name }}" required>
-                        </div>
-                    </div>
-                    <div class="row p-2">
-                        <div class="col-sm-4">
-                            <label for="floatingTextarea2">Beschreibung</label>
-                            <textarea class="form-control form-control-sm" placeholder="Beschreibung" name="description" id="description" style="height: 100px">{{ $label->description }}</textarea>
-                        </div>
-                    </div>
-                    <div class="p-2">
-                        <button style="min-width:70px; max-width:90px" type="submit" class="btn btn-success btn-sm">Submit</button>
-                    </div>
-                </form>
+<x-app-layout :title="$label->name.' bearbeiten'">
+    <div class="container" style="max-width: 40rem;">
+        <h1 class="h3 mb-3">{{ $label->name }} <small class="text-body-secondary">bearbeiten</small></h1>
+        <form action="{{ route('labels.update', $label) }}" method="POST" class="card card-body">
+            @csrf
+            @method('PUT')
+            @include('labels._form')
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Speichern</button>
+                <a href="{{ route('labels.show', $label) }}" class="btn btn-outline-secondary">Abbrechen</a>
             </div>
-        </div>
+        </form>
     </div>
 </x-app-layout>

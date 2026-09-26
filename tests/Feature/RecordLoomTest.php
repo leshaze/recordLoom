@@ -29,7 +29,9 @@ test('all list and detail pages render', function () {
     foreach ([
         '/',
         route('records.index'),
-        route('records.selling'),
+        route('records.index', ['status' => 'selling', 'sort' => 'price', 'dir' => 'desc']),
+        route('editions.index'),
+        route('records.import'),
         route('records.create'),
         route('records.show', $record),
         route('records.edit', $record),
@@ -64,7 +66,7 @@ test('a record can be created with new artist, label and a comma price', functio
         'country_name' => 'Germany',
         'platform' => 'Discogs',
         'current_price' => '12,50',
-    ])->assertRedirect(route('records.index'));
+    ])->assertRedirect();
 
     $record = Record::firstWhere('title', 'Neu! 75');
     expect($record->artist->name)->toBe('Neu!')
@@ -87,7 +89,7 @@ test('updating the price adds a price history entry only when it changes', funct
         'sold_price' => '25,5',
     ];
 
-    $this->put(route('records.update', $record), $payload)->assertRedirect(route('records.index'));
+    $this->put(route('records.update', $record), $payload)->assertRedirect(route('records.show', $record));
     expect(PriceHistory::count())->toBe(0);
 
     $this->put(route('records.update', $record), [...$payload, 'current_price' => '30'])->assertRedirect();

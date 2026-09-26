@@ -11,6 +11,26 @@ class StoreRecordRequest extends FormRequest
      */
     protected const PRICE_FIELDS = ['current_price', 'buy_price', 'sold_price'];
 
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'kind' => 'Art',
+            'artist_name' => 'Künstler',
+            'title' => 'Titel',
+            'label_name' => 'Label',
+            'current_price' => 'Aktueller Preis',
+            'buy_price' => 'Kaufpreis',
+            'sold_price' => 'Verkaufspreis',
+            'release_year' => 'Erscheinungsjahr',
+            'reissue_year' => 'Jahr der Neuauflage',
+            'sold_on' => 'Verkaufsdatum',
+            'cover' => 'Cover',
+        ];
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -48,13 +68,16 @@ class StoreRecordRequest extends FormRequest
             'matrix_number' => ['nullable', 'string', 'max:255'],
             'barcode' => ['nullable', 'string', 'max:255'],
             'archive_number' => ['nullable', 'string', 'max:255'],
-            'release_date' => ['nullable', 'string', 'max:255'],
-            'reissue_date' => ['nullable', 'string', 'max:255'],
+            'release_year' => ['nullable', 'integer', 'between:1900,'.(now()->year + 1)],
+            'reissue_year' => ['nullable', 'integer', 'between:1900,'.(now()->year + 1)],
             'grading_media' => ['nullable', 'integer', 'between:0,100'],
             'grading_cover' => ['nullable', 'integer', 'between:0,100'],
             'current_price' => ['nullable', 'numeric', 'min:0'],
             'buy_price' => ['nullable', 'numeric', 'min:0'],
             'note' => ['nullable', 'string', 'max:5000'],
+            'editions' => ['nullable', 'array'],
+            'editions.*' => ['integer', 'exists:editions,id'],
+            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:8192'],
         ];
     }
 }

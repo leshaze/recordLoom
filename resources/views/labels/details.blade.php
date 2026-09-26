@@ -1,46 +1,21 @@
-<x-app-layout>
+<x-app-layout :title="$label->name">
     <div class="container">
-        <div class="wrapper flex">
-            <div class="card table-responsive">
-                <div class="card-header">
-                    <div> {{ $label->name }} - {{ $total_value }} €<a href="{{ route('labels.edit', ['label' => $label->id]) }}"
-                            class="btn btn-sm"><i class="bi bi-pencil-square"></i></a>
-                        <a href="javascript:document.getElementById('delete-label-form').submit();" class="btn btn-sm"
-                            onclick="return confirm(@js('Delete ' . $label->name . '?'))"><i class="bi bi-trash"></i></a>
-                        <form id="delete-label-form" action="{{ route('labels.destroy', ['label' => $label->id]) }}"
-                            method="post" style="display: none;">
-                            @method('DELETE')
-                            {{ csrf_field() }}
-                        </form>
-                        </td>
-                    </div>
-                    <div class="position-absolute top-0 end-0"><a class="btn btn-info btn-sm" href="{{ route('labels.print', ['label' => $label->id]) }}" target="_blank" rel="noopener noreferrer">Export</a></div>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <div>
+                <h1 class="h3 mb-0">{{ $label->name }}</h1>
+                <div class="text-body-secondary">
+                    {{ $records->count() }} {{ $records->count() === 1 ? 'Platte' : 'Platten' }} · Wert {{ \App\Support\Format::euro($total_value ?: 0) }}
                 </div>
-                <table class="table small xs">
-                    <tr>
-                        <th>Kind</th>
-                        <th>Künstler</th>
-                        <th>Title</th>
-                        <th>Cover</th>
-                        <th>Media</th>
-                        <th>Katalog-Nr.</th>
-                        <th>Aktueller Preis</th>
-                    </tr>
-                    @foreach ($records as $record)
-                    <tr>
-                        <td>{{ $record->kind }}</td>
-                        <td><a
-                                href="{{ route('artists.show', ['artist' => $record->artist_id]) }}">{{ $record->artist->name }}</a>
-                        </td>
-                        <td><a href="{{ route('records.show', ['record' => $record->id]) }}">{{ $record->title }}</a>
-                        </td>
-                        <td>{{ $record->grading_cover }}</td>
-                        <td>{{ $record->grading_media }}</td>
-                        <td>{{ $record->catalog_number }}</td>
-                        <td>@if($record->current_price) {{ $record->current_price}} € @endif</td>
-                    </tr>
-                    @endforeach
-                </table>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ route('labels.print', $label) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-pdf"></i> PDF</a>
+                <a href="{{ route('labels.edit', $label) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> Bearbeiten</a>
+                <x-delete-button :action="route('labels.destroy', $label)" label="Löschen" :message="'Label „'.$label->name.'“ wirklich löschen?'" />
             </div>
         </div>
+        @if ($label->description)
+            <p style="white-space: pre-line;">{{ $label->description }}</p>
+        @endif
+        @include('records._table', ['records' => $records])
+    </div>
 </x-app-layout>

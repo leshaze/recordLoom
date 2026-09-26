@@ -114,7 +114,7 @@
                         <td>{{ $record->archive_number}}</td>
                         <td>{{ $record->barcode}}</td>
                         <td>@if($record->current_price) {{ $record->current_price}} € @endif</td>
-                        <td>{{ $record->release_date}}</td>
+                        <td>{{ $record->release_year }}</td>
                         <td>{{ $record->country?->name }}</td>
                     </tr>
                     @endforeach

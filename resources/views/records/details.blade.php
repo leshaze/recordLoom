@@ -1,187 +1,147 @@
-<x-app-layout>
+<x-app-layout :title="$record->title">
+    @php
+        $field = fn ($value) => filled($value) ? $value : '–';
+    @endphp
     <div class="container">
-        <div class="wrapper flex">
-            <div class="card">
-                <div class="card-header">{{ $record->title }} <a href="{{ route('records.edit', ['record' => $record->id]) }}"
-                        class="btn btn-sm"><i class="bi bi-pencil-square"></i></a> <a
-                        href="javascript:document.getElementById('delete-record-form').submit();" class="btn btn-sm"><i
-                            class="bi bi-trash"
-                            onclick="return confirm(@js('Delete ' . $record->artist->name . ' - ' . $record->title . '?'))"></i></a>
-                    <form id="delete-record-form" action="{{ route('records.destroy', ['record' => $record->id]) }}"
-                        method="post" style="display: none;">
-                        @method('DELETE')
-                        {{ csrf_field() }}
-                    </form>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <div>
+                <h1 class="h3 mb-0">{{ $record->title }}</h1>
+                <div class="text-body-secondary">
+                    <a href="{{ route('artists.show', $record->artist_id) }}">{{ $record->artist->name }}</a>
+                    · {{ $record->kind }}
+                    @if ($record->release_year) · {{ $record->release_year }} @endif
                 </div>
-                <div class="row p-2">
-                    <div class="col-sm-1">
-                        <input class="form-check-input" type="radio" name="kind" id="Radios1" value="LP"
-                            @if ($record->kind == 'LP') checked @endif disabled>
-                        <label class="form-check-label" for="Radios1">
-                            LP
-                        </label><br>
-                        <input class="form-check-input" type="radio" name="kind" id="Radios2" value="CD"
-                            @if ($record->kind == 'CD') checked @endif disabled>
-                        <label class="form-check-label" for="Radios2">
-                            CD
-                        </label>
-                    </div>
-                    <div class="col-sm-1">
-                    @if ($record->sold) 
-                        <input class="form-check-input" type="checkbox" id="sold" name="sold" checked disabled>
-                        <label class="form-check-label" for="sold" >Verkauft</label>
-                    @endif
-                    @if ($record->lost)
-                        <input class="form-check-input" type="checkbox" id="lost" name="lost" checked disabled>
-                        <label class="form-check-label" for="lost" >Verloren</label>
-                    @endif
-                    </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ route('records.edit', $record) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> Bearbeiten</a>
+                <x-delete-button :action="route('records.destroy', $record)" label="Löschen"
+                    :message="'Die Platte „'.$record->title.'“ von '.$record->artist->name.' wirklich löschen?'" />
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4 col-lg-3">
+                <x-cover :record="$record" :full="true" />
+                <div class="mt-2 d-flex flex-wrap gap-1">
+                    @if ($record->sold) <span class="badge text-bg-secondary">Verkauft</span> @endif
+                    @if ($record->lost) <span class="badge text-bg-danger">Verloren</span> @endif
+                    @if ($record->selling && ! $record->sold) <span class="badge text-bg-info">Zum Verkauf vorgemerkt</span> @endif
+                    @foreach ($record->editions as $edition)
+                        <a href="{{ route('records.index', ['edition' => $edition->id]) }}" class="badge text-bg-dark border text-decoration-none">{{ $edition->name }}</a>
+                    @endforeach
                 </div>
-                <div class="row p-2">
-                    <div class="col-md-2">
-                        <label for="title">Künstler</label>
-                        <br><a href="{{ route('artists.show', ['artist' => $record->artist_id]) }}">
-                            {{ $record->artist->name }}</a>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="title">Titel</label>
-                        <br><a href="{{ route('records.show', ['record' => $record->id]) }}">
-                            {{ $record->title }}</a>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="label_name">Label</label>
-                        <br><a href="{{ route('labels.show', ['label' => $record->label_id]) }}">
-                            {{ $record->label->name }}</a>
-                    </div>
+            </div>
+
+            <div class="col-md-8 col-lg-9">
+                <div class="card mb-3">
+                    <div class="card-header">Stammdaten &amp; Details</div>
+                    <dl class="card-body row mb-0">
+                        <dt class="col-sm-3">Label</dt>
+                        <dd class="col-sm-9"><a href="{{ route('labels.show', $record->label_id) }}">{{ $record->label->name }}</a></dd>
+                        <dt class="col-sm-3">Katalog-Nr.</dt>
+                        <dd class="col-sm-9">{{ $field($record->catalog_number) }}</dd>
+                        <dt class="col-sm-3">Matrix-Nr.</dt>
+                        <dd class="col-sm-9">{{ $field($record->matrix_number) }}</dd>
+                        <dt class="col-sm-3">Barcode</dt>
+                        <dd class="col-sm-9">{{ $field($record->barcode) }}</dd>
+                        <dt class="col-sm-3">Archiv-Nr.</dt>
+                        <dd class="col-sm-9">{{ $field($record->archive_number) }}</dd>
+                        <dt class="col-sm-3">Herkunftsland</dt>
+                        <dd class="col-sm-9">{{ $field($record->country?->name) }}</dd>
+                        <dt class="col-sm-3">Erscheinungsjahr</dt>
+                        <dd class="col-sm-9">{{ $field($record->release_year) }}</dd>
+                        <dt class="col-sm-3">Neuauflage</dt>
+                        <dd class="col-sm-9">{{ $field($record->reissue_year) }}</dd>
+                    </dl>
                 </div>
-                <div class="row p-2">
-                    <div class="col-sm-2">
-                        <label for="barcode">Barcode</label>
-                        <br>{{ $record->barcode }}
-                    </div>
-                    <div class="col-sm-2">
-                        <label for="title">Katalog-Nr.</label>
-                        <br>{{ $record->catalog_number }}
-                    </div>
-                    <div class="col-sm-2">
-                        <label for="matrix_number">Matrix-Nr.</label>
-                        <br>{{ $record->matrix_number }}
-                    </div>
-                    <div class="col-sm-2">
-                        <label for="archive_number">Archive-Nummer</label>
-                        <br>{{ $record->archive_number }}
-                    </div>
-                </div>
-                <div class="row p-2">
-                    <div class="col-sm-2">
-                        <label for="country">Herkunftsland</label>
-                        <br>{{ $record->country?->name }}
-                    </div>
-                    <div class="col-sm-2">
-                        <label for="release_date">Veröffentlichungsdat.</label>
-                        <br>{{ $record->release_date }}
-                    </div>
-                    <div class="col-sm-2">
-                        <label for="reissue_date">Datum Neuauflage</label>
-                        <br>{{ $record->reissue_date }}
-                    </div>
-                    <div class="col-sm-2">
-                        <label for="platform">Anbieter</label>
-                        <br>@if($record->platform) {{ $record->platform->name}}@endif
-                    </div>
-                </div>
-                <div class="row p-2">
-                    <div class="col-sm-2">
-                        <label for="grading_media">Grading media</label>
-                        <br>{{ $record->grading_media }}
-                    </div>
-                    <div class="col-sm-2">
-                        <label for="grading_cover">Grading Cover</label>
-                        <br>{{ $record->grading_cover }}
-                    </div>
-                    <div class="col-sm-2">
-                        <label for="current_price">Aktueller Preis</label>
-                        <br>{{ $record->current_price }} €
-                    </div>
-                    <div class="col-sm-2">
-                            <label for="buy_price">Kaufpreis €</label>
-                            <br>{{ $record->buy_price }} €
-                        </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">Zustand &amp; Preis</div>
+                    <dl class="card-body row mb-0">
+                        <dt class="col-sm-3">Grading Media</dt>
+                        <dd class="col-sm-9">
+                            @if ($record->gradingMedia())
+                                <x-grading-badge :grading="$record->gradingMedia()" /> {{ $record->gradingMedia()['label'] }}
+                            @else – @endif
+                        </dd>
+                        <dt class="col-sm-3">Grading Cover</dt>
+                        <dd class="col-sm-9">
+                            @if ($record->gradingCover())
+                                <x-grading-badge :grading="$record->gradingCover()" /> {{ $record->gradingCover()['label'] }}
+                            @else – @endif
+                        </dd>
+                        <dt class="col-sm-3">Aktueller Preis</dt>
+                        <dd class="col-sm-9">{{ \App\Support\Format::euro($record->current_price) ?: '–' }}</dd>
+                        <dt class="col-sm-3">Kaufpreis</dt>
+                        <dd class="col-sm-9">{{ \App\Support\Format::euro($record->buy_price) ?: '–' }}</dd>
+                        <dt class="col-sm-3">Anbieter</dt>
+                        <dd class="col-sm-9">
+                            @if ($record->platform)
+                                <a href="{{ route('platforms.show', $record->platform) }}">{{ $record->platform->name }}</a>
+                            @else – @endif
+                        </dd>
+                    </dl>
                 </div>
 
                 @if ($record->sold)
-                <div class="row p-2">
-                    <div class="col-sm-2">
-                        <label for="sold_date">Verkaufsdatum</label>
-                        <br>{{ $record->sold_date }}
+                    <div class="card mb-3">
+                        <div class="card-header">Verkauf</div>
+                        <dl class="card-body row mb-0">
+                            <dt class="col-sm-3">Verkaufsdatum</dt>
+                            <dd class="col-sm-9">{{ $record->sold_on?->format('d.m.Y') ?? '–' }}</dd>
+                            <dt class="col-sm-3">Verkauft an</dt>
+                            <dd class="col-sm-9">{{ $field($record->sold_to) }}</dd>
+                            <dt class="col-sm-3">Verkaufspreis</dt>
+                            <dd class="col-sm-9">{{ \App\Support\Format::euro($record->sold_price) ?: '–' }}</dd>
+                        </dl>
                     </div>
-                    <div class="col-sm-2">
-                        <label for="sold_to">Verkauf an</label>
-                        <br>{{ $record->sold_to }}
-                    </div>
-                    <div class="col-sm-2">
-                        <label for="sold_price">Verkaufspreis €</label>
-                        <br>{{ $record->sold_price }}
-                    </div>
-                </div>
                 @endif
+
                 @if ($record->note)
-                <div class="row p-2">
-                        <div class="col-sm-4">
-                            <label for="floatingTextarea2">Beschreibung</label>
-                            <br>{{ $record->note }}
+                    <div class="card mb-3">
+                        <div class="card-header">Notiz</div>
+                        <div class="card-body" style="white-space: pre-line;">{{ $record->note }}</div>
+                    </div>
+                @endif
+
+                @if ($prices->count() >= 2)
+                    <div class="card mb-3">
+                        <div class="card-header">Preisentwicklung</div>
+                        <div class="card-body row">
+                            <div class="col-md-5 small">
+                                @foreach ($prices as $price)
+                                    {{ $price->created_at->format('d.m.Y') }} – {{ \App\Support\Format::euro($price->price) }}
+                                    @if ($price->platform)
+                                        – @if ($price->platform->safe_url)<a href="{{ $price->platform->safe_url }}" target="_blank" rel="noopener noreferrer">{{ $price->platform->name }}</a>@else{{ $price->platform->name }}@endif
+                                    @endif
+                                    <br>
+                                @endforeach
+                            </div>
+                            <div class="col-md-7">
+                                <canvas id="priceChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 @endif
-                @if ($prices->count() >= '2')
-                <div class="row p-2">
-                    <div class="col-sm-3">
-                        
-                        <label for="price_history">Preisentwicklung in €</label><br>
-                        
-                        @foreach ($prices as $price)
-                        {{ date('d.m.Y', strtotime($price->created_at)) }} - {{ $price->price }} € @if ($price->platform)
-                        - <a href="{{ $price->platform->safe_url }}" target="_blank" rel="noopener noreferrer">{{ $price->platform->name }}</a><br>
-                        @endif
-                        @endforeach
-                    </div>
-                    <div class="col-sm-4">
-                        <canvas id="myChart"></canvas>
-                    </div>
-                </div>
-                @endif    
             </div>
         </div>
     </div>
-    <script type="module">
-        
-        const labels = @json($prices->map(fn ($price) => $price->created_at->format('d.m.y'))->values());
 
-        const data = {
-            labels: labels,
-            datasets: [{
-                label: '',
-                backgroundColor: 'rgb(255, 99, 132)',
-                borderColor: 'rgb(255, 99, 132)',
-                data: @json($prices->map(fn ($price) => (float) $price->price)->values())
-            }]
-        };
-
-        const config = {
-            type: 'line',
-            data: data,
-            options: {
-                plugins: {
-                    legend: {
-                        display: false,
-                    }
-                }
-            }
-        };
-
-        const canvas = document.getElementById('myChart');
-        if (canvas) {
-            new Chart(canvas, config);
-        }
-    </script>
+    @if ($prices->count() >= 2)
+        <script type="module">
+            new Chart(document.getElementById('priceChart'), {
+                type: 'line',
+                data: {
+                    labels: @json($prices->map(fn ($price) => $price->created_at->format('d.m.y'))->values()),
+                    datasets: [{
+                        label: 'Preis in €',
+                        backgroundColor: 'rgb(255, 99, 132)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        data: @json($prices->map(fn ($price) => (float) $price->price)->values())
+                    }]
+                },
+                options: { plugins: { legend: { display: false } } }
+            });
+        </script>
+    @endif
 </x-app-layout>

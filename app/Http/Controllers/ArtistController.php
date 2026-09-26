@@ -21,7 +21,7 @@ class ArtistController extends Controller
 
     public function show(Artist $artist)
     {
-        $records = $artist->records()->with('label')->get();
+        $records = $artist->records()->with(['artist', 'label', 'editions'])->get();
         $total_value = $records->sum('current_price');
 
         return view('artists.details', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value]);
@@ -37,7 +37,7 @@ class ArtistController extends Controller
         $name = $request->validated('artist_name');
 
         if (Artist::where('name', $name)->exists()) {
-            return redirect()->route('artists.create')->with('error', 'Artist '.$name.' is already in the database.');
+            return redirect()->route('artists.create')->with('error', 'Künstler „'.$name.'“ ist bereits vorhanden.');
         }
 
         $artist = new Artist;
@@ -45,7 +45,7 @@ class ArtistController extends Controller
         $artist->description = $request->validated('description');
         $artist->save();
 
-        return redirect()->route('artists.create')->with('info', 'Artist '.$artist->name.' added successfully');
+        return redirect()->route('artists.create')->with('info', 'Künstler „'.$artist->name.'“ wurde angelegt.');
     }
 
     public function edit(Artist $artist)
@@ -59,18 +59,18 @@ class ArtistController extends Controller
         $artist->description = $request->validated('description');
         $artist->save();
 
-        return redirect()->route('artists.index')->with('info', 'Artist '.$artist->name.' updated successfully');
+        return redirect()->route('artists.index')->with('info', 'Künstler „'.$artist->name.'“ wurde gespeichert.');
     }
 
     public function destroy(Artist $artist)
     {
         if ($artist->records()->exists()) {
-            return redirect()->route('artists.index')->with('error', 'Artist '.$artist->name.' could not be deleted. ');
+            return redirect()->route('artists.index')->with('error', 'Künstler „'.$artist->name.'“ kann nicht gelöscht werden, weil noch Platten zugeordnet sind.');
         }
 
         $artist->delete();
 
-        return redirect()->route('artists.index')->with('info', 'Artist '.$artist->name.' deleted successfully');
+        return redirect()->route('artists.index')->with('info', 'Künstler „'.$artist->name.'“ wurde gelöscht.');
     }
 
     public function print(Artist $artist)
