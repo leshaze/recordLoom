@@ -16,7 +16,9 @@ RecordLoom can take over data, covers and prices from [Discogs](https://www.disc
 
 - **New record:** search by barcode, catalog number or artist and title, pick the pressing and the form is filled
   in (title, artist, label, numbers, country, year, Zusatzinfos, cover). Grading and prices stay manual.
-- **Barcode scanner:** on phones and tablets the barcode can be scanned with the camera (EAN/UPC). Browsers only
+- **Barcode scanner:** on phones and tablets the barcode can be scanned with the camera (EAN/UPC), in the
+  Discogs search and in the search of the navigation. The navigation opens the record from the collection
+  (or lists all records with this barcode); an unknown barcode offers to add the record via Discogs. Browsers only
   allow the live camera over **https** (or localhost); over plain http a photo is taken instead and the barcode is
   read from it.
 - **Link:** every record can store its Discogs release ID; the record page links to Discogs.

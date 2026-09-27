@@ -4,6 +4,7 @@ use App\Models\Artist;
 use App\Models\Edition;
 use App\Models\Label;
 use App\Models\Record;
+use App\Services\Discogs\DiscogsClient;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -217,4 +218,47 @@ test('the pdf exports are linked', function () {
     $this->get(route('labels.show', $record->label_id))->assertSee(route('labels.print', $record->label_id), false);
 
     $this->get(route('records.print'))->assertOk()->assertHeader('content-type', 'application/pdf');
+});
+
+test('a scanned barcode opens the record from the collection', function () {
+    $record = newRecord(['title' => 'Mit Barcode', 'barcode' => '5 099996 602317']);
+
+    // Spaces and the leading zero of the EAN form of a UPC code do not matter.
+    $this->get(route('records.barcode', ['code' => '5099996602317']))->assertRedirect(route('records.show', $record));
+
+    $upc = newRecord(['title' => 'UPC', 'barcode' => '075596061920']);
+    $this->get(route('records.barcode', ['code' => '0075596061920']))->assertRedirect(route('records.show', $upc));
+});
+
+test('several records with the barcode are listed', function () {
+    newRecord(['title' => 'Als LP', 'barcode' => '4006381333931']);
+    newRecord(['title' => 'Als CD', 'kind' => 'CD', 'barcode' => '4006381333931']);
+    newRecord(['title' => 'Andere', 'barcode' => '1234567890128']);
+
+    $this->get(route('records.barcode', ['code' => '4006381333931']))
+        ->assertRedirect(route('records.index', ['barcode' => '4006381333931']));
+
+    $this->get(route('records.index', ['barcode' => '4006381333931']))
+        ->assertSee('Als LP')->assertSee('Als CD')->assertDontSee('Andere');
+});
+
+test('an unknown barcode offers to add the record via discogs', function () {
+    newRecord(['barcode' => '4006381333931']);
+
+    $this->get(route('records.barcode', ['code' => '9999999999994']))
+        ->assertRedirect(route('records.index', ['barcode' => '9999999999994']));
+
+    $this->get(route('records.index', ['barcode' => '9999999999994']))
+        ->assertSee('Keine Platte mit dem Barcode 9999999999994 in der Sammlung.')
+        ->assertSee(route('records.create', ['barcode' => '9999999999994']), false);
+
+    config(['services.discogs.token' => 'test-token']);
+    app()->forgetInstance(DiscogsClient::class);
+    $this->get(route('records.create', ['barcode' => '9999999999994']))
+        ->assertSee('value="9999999999994"', false)
+        ->assertSee('data-autosearch', false);
+});
+
+test('the navigation offers the barcode scanner', function () {
+    $this->get('/')->assertSee('data-barcode-scan="collection"', false)->assertSee('id="barcode-modal"', false);
 });

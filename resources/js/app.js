@@ -2,6 +2,7 @@ import './bootstrap';
 import 'jquery-ui/dist/jquery-ui';
 import { Toast } from 'bootstrap';
 import { initDiscogs, initDiscogsMatching, initDiscogsReview } from './discogs';
+import { initBarcodeButtons } from './barcode-scanner';
 
 const autocompleteUrl = document.body.dataset.autocompleteUrl;
 
@@ -33,6 +34,7 @@ function autocompleteWithId(input, search, idField) {
 }
 
 $(function() {
+    initBarcodeButtons();
     initDiscogs();
     initDiscogsMatching();
     initDiscogsReview();

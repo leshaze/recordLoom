@@ -326,7 +326,7 @@ test('the discogs id is part of the csv export', function () {
 
 test('the record form offers the barcode scanner', function () {
     $this->get(route('records.create'))
-        ->assertSee('id="barcode-scan"', false)
+        ->assertSee('data-barcode-scan="discogs"', false)
         ->assertSee('capture="environment"', false)
         ->assertSee('Barcode scannen');
 });

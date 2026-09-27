@@ -1,3 +1,5 @@
+import { Modal } from 'bootstrap';
+
 // Barcode scanner for record barcodes (EAN-13, EAN-8, UPC-A, UPC-E) with the camera of phones and tablets.
 // ZXing is only loaded when the scanner is used.
 
@@ -53,4 +55,83 @@ export async function scanImageFile(file) {
     } finally {
         URL.revokeObjectURL(url);
     }
+}
+
+/**
+ * Buttons with data-barcode-scan open the scanner dialog (or the camera app without live camera).
+ * data-barcode-scan="collection": open the record with this barcode in the collection.
+ * data-barcode-scan="<name>": dispatch the event "barcode:<name>" with the code, e.g. for the Discogs search.
+ */
+export function initBarcodeButtons() {
+    const modalElement = document.getElementById('barcode-modal');
+    const buttons = document.querySelectorAll('[data-barcode-scan]');
+    if (!modalElement || !buttons.length) return;
+
+    const texts = JSON.parse(modalElement.dataset.texts || '{}');
+    const modal = Modal.getOrCreateInstance(modalElement);
+    const video = document.getElementById('barcode-video');
+    const photo = document.getElementById('barcode-photo');
+    const error = document.getElementById('barcode-error');
+    let controls = null;
+    let target = null;
+
+    const showError = text => {
+        error.textContent = text || '';
+        error.classList.toggle('d-none', !text);
+    };
+
+    const stop = () => {
+        controls?.stop();
+        controls = null;
+    };
+
+    const found = code => {
+        navigator.vibrate?.(80);
+        stop();
+        modal.hide();
+        if (target === 'collection') {
+            window.location.href = modalElement.dataset.collectionUrl + '?' + new URLSearchParams({ code });
+        } else {
+            document.dispatchEvent(new CustomEvent('barcode:' + target, { detail: { code } }));
+        }
+    };
+
+    buttons.forEach(button => button.addEventListener('click', () => {
+        target = button.dataset.barcodeScan;
+        showError('');
+        if (canScanLive()) {
+            modal.show();
+        } else {
+            // No live camera (e.g. plain http): take a photo with the camera app instead.
+            photo.click();
+        }
+    }));
+
+    modalElement.addEventListener('shown.bs.modal', async () => {
+        if (!canScanLive()) return;
+        try {
+            controls = await startScanner(video, found);
+        } catch {
+            showError(texts.noCamera);
+        }
+    });
+    modalElement.addEventListener('hidden.bs.modal', stop);
+
+    photo.addEventListener('change', async () => {
+        const file = photo.files[0];
+        photo.value = '';
+        if (!file) return;
+        stop();
+        if (!modalElement.classList.contains('show')) modal.show();
+        showError('');
+        error.classList.remove('d-none', 'text-danger');
+        error.textContent = texts.reading;
+        const code = await scanImageFile(file);
+        error.classList.add('text-danger');
+        if (code) {
+            found(code);
+        } else {
+            showError(texts.notFound);
+        }
+    });
 }

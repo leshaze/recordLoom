@@ -45,6 +45,21 @@ class RecordController extends Controller
     }
 
     /**
+     * Result of the barcode scanner in the navigation: one record opens directly, otherwise the filtered list.
+     */
+    public function barcode(Request $request)
+    {
+        $barcode = RecordFilter::normalizeBarcode((string) $request->query('code', ''));
+        $records = $barcode === '' ? collect() : RecordFilter::whereBarcode(Record::query(), $barcode)->limit(2)->pluck('id');
+
+        if ($records->count() === 1) {
+            return redirect()->route('records.show', $records->first());
+        }
+
+        return redirect()->route('records.index', ['barcode' => $barcode]);
+    }
+
+    /**
      * The old "For Selling" page is now a filter of the record list.
      */
     public function selling()
@@ -54,7 +69,13 @@ class RecordController extends Controller
 
     public function create()
     {
-        return view('records.create', ['record' => new Record, 'editions' => Edition::orderBy('name')->get(), 'discogsConfigured' => app(DiscogsClient::class)->isConfigured()]);
+        return view('records.create', [
+            'record' => new Record,
+            'editions' => Edition::orderBy('name')->get(),
+            'discogsConfigured' => app(DiscogsClient::class)->isConfigured(),
+            // From "not in the collection" after scanning: search this barcode on Discogs right away.
+            'discogsQuery' => RecordFilter::normalizeBarcode((string) request()->query('barcode', '')),
+        ]);
     }
 
     public function store(StoreRecordRequest $request, SaveRecord $saveRecord, DiscogsCovers $covers)
