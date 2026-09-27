@@ -69,6 +69,8 @@ test('every text used in the app has an english translation', function () {
         glob(resource_path('views/*/*.blade.php')),
         glob(app_path('Http/Controllers/*.php')),
         glob(app_path('Http/Requests/*.php')),
+        glob(app_path('Mail/*.php')),
+        [base_path('routes/console.php')],
         glob(app_path('Services/*/*.php')),
         glob(app_path('Support/*.php')),
     );

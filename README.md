@@ -39,6 +39,16 @@ Setup:
 
 Discogs allows 60 requests per minute; search results and releases are cached.
 
+### Weekly backup by mail
+
+Once a week (Sunday 04:23) RecordLoom mails a compressed copy of the SQLite database, but only if the collection
+has changed since the last backup (sessions and cache do not count). Cover images are not included.
+
+1. Configure sending mails in the `.env` (`MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
+   `MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM_ADDRESS`) and set the recipient: `BACKUP_MAIL_TO=you@example.com`
+2. Run the Laravel scheduler with cron: `* * * * * cd /var/www/recordLoom && php artisan schedule:run`
+3. Test it: `php artisan backup:mail --force`
+
 ### Updating an existing installation
 
 The migration `2026_09_26_100000_improve_records_data_model` converts existing data:
