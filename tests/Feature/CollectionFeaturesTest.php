@@ -207,3 +207,14 @@ test('the dashboard shows tiles and the latest records', function () {
         ->assertSee('10,00 €')
         ->assertSee('Ralf und Florian');
 });
+
+test('the pdf exports are linked', function () {
+    $record = newRecord(['selling' => true]);
+
+    $this->get('/')->assertSee(route('records.print'), false);
+    $this->get(route('records.index', ['status' => 'selling']))->assertSee(route('records.print'), false);
+    $this->get(route('artists.show', $record->artist_id))->assertSee(route('artists.print', $record->artist_id), false);
+    $this->get(route('labels.show', $record->label_id))->assertSee(route('labels.print', $record->label_id), false);
+
+    $this->get(route('records.print'))->assertOk()->assertHeader('content-type', 'application/pdf');
+});

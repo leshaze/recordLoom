@@ -16,6 +16,7 @@
                         <a href="{{ route('records.index', ['status' => 'selling']) }}" class="dropdown-item">{{ __('Zum Verkauf vorgemerkt') }}</a>
                         <a href="{{ route('records.create') }}" class="dropdown-item"><i class="bi bi-plus-lg"></i> {{ __('Neue Platte') }}</a>
                         <div class="dropdown-divider"></div>
+                        <a href="{{ route('records.print') }}" target="_blank" class="dropdown-item"><i class="bi bi-filetype-pdf"></i> {{ __('Verkaufsliste (PDF)') }}</a>
                         <a href="{{ route('records.import') }}" class="dropdown-item"><i class="bi bi-upload"></i> {{ __('CSV-Import') }}</a>
                         <a href="{{ route('records.export') }}" class="dropdown-item"><i class="bi bi-download"></i> {{ __('CSV-Export (alle)') }}</a>
                         <div class="dropdown-divider"></div>
