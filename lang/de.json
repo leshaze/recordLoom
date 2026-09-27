@@ -1,6 +1,8 @@
 {
     ":count Angebot|:count Angebote": ":count Angebot|:count Angebote",
+    ":count CD|:count CDs": ":count CD|:count CDs",
     ":count Eintrag|:count Einträge": ":count Eintrag|:count Einträge",
+    ":count LP|:count LPs": ":count LP|:count LPs",
     ":count Platte importiert.|:count Platten importiert.": ":count Platte importiert.|:count Platten importiert.",
     ":count Platte ist verknüpft.|:count Platten sind verknüpft.": ":count Platte ist verknüpft.|:count Platten sind verknüpft.",
     ":count Platte ohne Verknüpfung.|:count Platten ohne Verknüpfung.": ":count Platte ohne Verknüpfung.|:count Platten ohne Verknüpfung.",

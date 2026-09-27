@@ -24,6 +24,36 @@ function newRecord(array $attributes = []): Record
     return $record;
 }
 
+test('artists and labels can be searched, filtered and sorted', function () {
+    newRecord(['title' => 'Autobahn', 'current_price' => '30']);
+    newRecord(['title' => 'Radio-Aktivität', 'current_price' => '20']);
+    newRecord(['title' => 'Tour de France', 'kind' => 'CD', 'current_price' => '12.5']);
+    newRecord(['title' => 'Unknown Pleasures', 'artist' => 'Joy Division', 'label' => 'Factory', 'current_price' => '100']);
+    Artist::forceCreate(['name' => 'Amon Düül', 'description' => 'Krautrock aus München']);
+    Label::create(['name' => 'Brain']);
+
+    // Name first by default, totals calculated per kind.
+    $this->get(route('artists.index'))
+        ->assertSeeInOrder(['Amon Düül', 'Joy Division', 'Kraftwerk'])
+        ->assertSeeInOrder(['Kraftwerk', '2', '1', '50,00 €', '12,50 €']);
+
+    $this->get(route('artists.index', ['q' => 'krautrock']))->assertSee('Amon Düül')->assertDontSee('Joy Division');
+    $this->get(route('artists.index', ['records' => 'without']))->assertSee('Amon Düül')->assertDontSee('Kraftwerk');
+    $this->get(route('artists.index', ['records' => 'with']))->assertSee('Kraftwerk')->assertDontSee('Amon Düül');
+
+    // Numbers are sorted, entries without records stay at the end in both directions.
+    $this->get(route('artists.index', ['sort' => 'lp_value', 'dir' => 'desc']))->assertSeeInOrder(['Joy Division', 'Kraftwerk', 'Amon Düül']);
+    $this->get(route('artists.index', ['sort' => 'lp_value', 'dir' => 'asc']))->assertSeeInOrder(['Kraftwerk', 'Joy Division', 'Amon Düül']);
+    $this->get(route('artists.index', ['sort' => 'lps', 'dir' => 'desc']))->assertSeeInOrder(['Kraftwerk', 'Joy Division', 'Amon Düül']);
+
+    $this->get(route('labels.index', ['sort' => 'cds', 'dir' => 'desc']))->assertSeeInOrder(['Kling Klang', 'Brain']);
+    $this->get(route('labels.index', ['records' => 'without']))->assertSee('Brain')->assertDontSee('Factory');
+    $this->get(route('labels.index', ['q' => 'fact', 'per_page' => 30]))->assertSee('Factory')->assertDontSee('Kling Klang');
+
+    // Invalid values fall back to the defaults.
+    $this->get(route('labels.index', ['sort' => 'id; drop', 'dir' => 'x', 'records' => 'x', 'per_page' => 5]))->assertOk();
+});
+
 test('the record list can be searched, filtered and sorted', function () {
     newRecord(['title' => 'Autobahn', 'release_year' => 1974, 'current_price' => '30']);
     newRecord(['title' => 'Computerwelt', 'kind' => 'CD', 'release_year' => 1981, 'current_price' => '5']);

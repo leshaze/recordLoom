@@ -5,18 +5,19 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreLabelRequest;
 use App\Http\Requests\UpdateLabelRequest;
 use App\Models\Label;
-use App\Models\Record;
+use App\Support\GroupFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class LabelController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $labels = Label::orderBy('name')->paginate(20);
-        $records = Record::whereIn('label_id', $labels->pluck('id'))->get(['label_id', 'kind', 'current_price']);
+        $filter = new GroupFilter($request, Label::class, 'labels.index');
+        $labels = $filter->query()->paginate($filter->values['per_page'])->withQueryString();
 
-        return view('labels.all', ['labels' => $labels, 'records' => $records]);
+        return view('labels.all', ['labels' => $labels, 'filter' => $filter]);
     }
 
     public function create()
