@@ -44,7 +44,7 @@ class LabelController extends Controller
     public function show(Label $label)
     {
         $records = $label->records()->with(['artist', 'label', 'editions'])->get();
-        $total_value = $records->sum('current_price');
+        $total_value = $records->where('sold', false)->sum('current_price');
 
         return view('labels.details', ['label' => $label, 'records' => $records, 'total_value' => $total_value]);
     }
@@ -86,7 +86,7 @@ class LabelController extends Controller
             ->orderBy('records.title', 'ASC')
             ->get();
 
-        $total_value = $records->sum('current_price');
+        $total_value = $records->where('sold', false)->sum('current_price');
         $pdf = Pdf::loadView('labels.print', ['label' => $label, 'records' => $records, 'total_value' => $total_value]);
 
         return $pdf->stream($label->name.'-'.$current.'.pdf');

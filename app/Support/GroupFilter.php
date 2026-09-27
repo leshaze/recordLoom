@@ -52,11 +52,13 @@ class GroupFilter
     {
         $v = $this->values;
         $kind = fn (string $kind) => fn (Builder $query) => $query->where('kind', $kind);
+        // Sold records are counted but no longer part of the value.
+        $value = fn (string $kind) => fn (Builder $query) => $query->where('kind', $kind)->where('sold', false);
 
         $query = $this->model::query()
             ->withCount(['records as lps' => $kind('LP'), 'records as cds' => $kind('CD')])
-            ->withSum(['records as lp_value' => $kind('LP')], 'current_price')
-            ->withSum(['records as cd_value' => $kind('CD')], 'current_price');
+            ->withSum(['records as lp_value' => $value('LP')], 'current_price')
+            ->withSum(['records as cd_value' => $value('CD')], 'current_price');
 
         if ($v['q'] !== '') {
             $like = '%'.$v['q'].'%';

@@ -23,7 +23,7 @@ class ArtistController extends Controller
     public function show(Artist $artist)
     {
         $records = $artist->records()->with(['artist', 'label', 'editions'])->get();
-        $total_value = $records->sum('current_price');
+        $total_value = $records->where('sold', false)->sum('current_price');
 
         return view('artists.details', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value]);
     }
@@ -82,7 +82,7 @@ class ArtistController extends Controller
             ->orderBy('title', 'ASC')
             ->get();
 
-        $total_value = $records->sum('current_price');
+        $total_value = $records->where('sold', false)->sum('current_price');
         $pdf = Pdf::loadView('artists.print', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value]);
 
         return $pdf->stream($artist->name.'-'.$current.'.pdf');

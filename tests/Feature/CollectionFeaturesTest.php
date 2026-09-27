@@ -29,13 +29,18 @@ test('artists and labels can be searched, filtered and sorted', function () {
     newRecord(['title' => 'Radio-Aktivität', 'current_price' => '20']);
     newRecord(['title' => 'Tour de France', 'kind' => 'CD', 'current_price' => '12.5']);
     newRecord(['title' => 'Unknown Pleasures', 'artist' => 'Joy Division', 'label' => 'Factory', 'current_price' => '100']);
+    newRecord(['title' => 'Mensch-Maschine', 'current_price' => '1000', 'sold' => true]);
     Artist::forceCreate(['name' => 'Amon Düül', 'description' => 'Krautrock aus München']);
     Label::create(['name' => 'Brain']);
 
     // Name first by default, totals calculated per kind.
     $this->get(route('artists.index'))
         ->assertSeeInOrder(['Amon Düül', 'Joy Division', 'Kraftwerk'])
-        ->assertSeeInOrder(['Kraftwerk', '2', '1', '50,00 €', '12,50 €']);
+        ->assertSeeInOrder(['Kraftwerk', '3', '1', '50,00 €', '12,50 €']);
+
+    // Sold records are counted, but not part of the value.
+    $this->get(route('artists.show', Artist::firstWhere('name', 'Kraftwerk')))->assertSee('62,50 €')->assertDontSee('1.062,50 €');
+    $this->get(route('labels.show', Label::firstWhere('name', 'Kling Klang')))->assertSee('62,50 €')->assertDontSee('1.062,50 €');
 
     $this->get(route('artists.index', ['q' => 'krautrock']))->assertSee('Amon Düül')->assertDontSee('Joy Division');
     $this->get(route('artists.index', ['records' => 'without']))->assertSee('Amon Düül')->assertDontSee('Kraftwerk');
