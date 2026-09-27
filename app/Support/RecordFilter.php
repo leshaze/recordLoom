@@ -38,6 +38,8 @@ class RecordFilter
      */
     public array $values;
 
+    public string $route = 'records.index';
+
     public function __construct(Request $request)
     {
         $sort = $request->query('sort');

@@ -5,24 +5,25 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreArtistRequest;
 use App\Http\Requests\UpdateArtistRequest;
 use App\Models\Artist;
-use App\Models\Record;
+use App\Support\GroupFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class ArtistController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $artists = Artist::orderBy('name')->paginate(20);
-        $records = Record::whereIn('artist_id', $artists->pluck('id'))->get(['artist_id', 'kind', 'current_price']);
+        $filter = new GroupFilter($request, Artist::class, 'artists.index');
+        $artists = $filter->query()->paginate($filter->values['per_page'])->withQueryString();
 
-        return view('artists.all', ['artists' => $artists, 'records' => $records]);
+        return view('artists.all', ['artists' => $artists, 'filter' => $filter]);
     }
 
     public function show(Artist $artist)
     {
         $records = $artist->records()->with(['artist', 'label', 'editions'])->get();
-        $total_value = $records->sum('current_price');
+        $total_value = $records->where('sold', false)->sum('current_price');
 
         return view('artists.details', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value]);
     }
@@ -81,7 +82,7 @@ class ArtistController extends Controller
             ->orderBy('title', 'ASC')
             ->get();
 
-        $total_value = $records->sum('current_price');
+        $total_value = $records->where('sold', false)->sum('current_price');
         $pdf = Pdf::loadView('artists.print', ['artist' => $artist, 'records' => $records, 'total_value' => $total_value]);
 
         return $pdf->stream($artist->name.'-'.$current.'.pdf');
