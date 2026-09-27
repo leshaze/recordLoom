@@ -40,8 +40,10 @@ return [
         'token' => env('DISCOGS_TOKEN'),
         'user_agent' => env('DISCOGS_USER_AGENT', 'RecordLoom/1.0 +https://github.com/leshaze/recordLoom'),
         'base_url' => env('DISCOGS_BASE_URL', 'https://api.discogs.com'),
-        // Update the market data of records marked for sale every night
+        // Update the market data of records marked for sale regularly
         'nightly_prices' => env('DISCOGS_NIGHTLY_PRICES', true),
+        // Hours between two updates of the market data, missed updates are caught up
+        'price_interval_hours' => (int) env('DISCOGS_PRICE_INTERVAL_HOURS', 24),
     ],
 
 ];

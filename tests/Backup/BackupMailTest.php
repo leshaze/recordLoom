@@ -5,6 +5,7 @@ use App\Models\Artist;
 use App\Models\Label;
 use App\Models\Record;
 use App\Services\Backup\DatabaseBackup;
+use App\Support\CatchUpSchedule;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
@@ -94,4 +95,40 @@ test('the attachment is a readable copy of the database', function () {
 
     unlink($copy);
     unlink($path);
+});
+
+test('with --if-due the backup runs every 7 days and catches up missed runs', function () {
+    $record = backupRecord();
+    $this->travelTo(now()->startOfDay());
+
+    // First check: never ran before, so it is due.
+    $this->artisan('backup:mail --if-due')->assertSuccessful();
+    Mail::assertSentCount(1);
+
+    // Changes during the week are not sent before 7 days have passed.
+    $record->title = 'Geändert';
+    $record->save();
+    $this->travel(3)->days();
+    $this->artisan('backup:mail --if-due');
+    Mail::assertSentCount(1);
+
+    // The Pi was switched off on the due date and is started 10 days later: the backup is caught up.
+    $this->travel(7)->days();
+    $this->artisan('backup:mail --if-due');
+    Mail::assertSentCount(2);
+
+    // Right after that it is not due again.
+    $this->travel(15)->minutes();
+    $this->artisan('backup:mail --if-due');
+    Mail::assertSentCount(2);
+});
+
+test('a week without changes is checked but sends no mail', function () {
+    backupRecord();
+    $this->artisan('backup:mail --if-due');
+    $this->travel(8)->days();
+    $this->artisan('backup:mail --if-due')->expectsOutputToContain('No changes');
+
+    Mail::assertSentCount(1);
+    expect(app(CatchUpSchedule::class)->lastRun('backup:mail')->isToday())->toBeTrue();
 });

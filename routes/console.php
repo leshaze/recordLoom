@@ -9,12 +9,20 @@ use App\Services\Backup\DatabaseBackup;
 use App\Services\Discogs\DiscogsClient;
 use App\Services\Discogs\DiscogsException;
 use App\Services\Discogs\DiscogsPrices;
+use App\Support\CatchUpSchedule;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('discogs:update-prices {--all : All linked records instead of only the ones marked for sale}', function (DiscogsClient $client, DiscogsPrices $prices) {
+Artisan::command('discogs:update-prices
+    {--all : All linked records instead of only the ones marked for sale}
+    {--if-due : Only run when the last run is at least DISCOGS_PRICE_INTERVAL_HOURS ago (for the scheduler)}', function (DiscogsClient $client, DiscogsPrices $prices, CatchUpSchedule $schedule) {
+    $interval = config('services.discogs.price_interval_hours').' hours';
+    if ($this->option('if-due') && ! $schedule->isDue('discogs:update-prices', $interval)) {
+        return 0;
+    }
+
     if (! $client->isConfigured()) {
         $this->error('DISCOGS_TOKEN is not set.');
 
@@ -43,15 +51,25 @@ Artisan::command('discogs:update-prices {--all : All linked records instead of o
     }
 
     $this->info(count($records).' records checked, '.$failed.' failed.');
+    $schedule->markRun('discogs:update-prices');
 
     return 0;
 })->purpose('Update the Discogs market data of linked records');
 
 if (config('services.discogs.nightly_prices') && config('services.discogs.token')) {
-    Schedule::command('discogs:update-prices')->dailyAt('03:17')->withoutOverlapping();
+    // Every 15 minutes the scheduler checks whether 24 hours have passed, so a missed run is caught up
+    // as soon as the server (e.g. a Raspberry Pi that is not always on) runs again.
+    Schedule::command('discogs:update-prices --if-due')->everyFifteenMinutes()->withoutOverlapping();
 }
 
-Artisan::command('backup:mail {--force : Send even if nothing has changed}', function (DatabaseBackup $backup) {
+Artisan::command('backup:mail
+    {--force : Send even if nothing has changed}
+    {--if-due : Only check when the last check is at least BACKUP_INTERVAL_DAYS ago (for the scheduler)}', function (DatabaseBackup $backup, CatchUpSchedule $schedule) {
+    $interval = config('backup.interval_days').' days';
+    if ($this->option('if-due') && ! $schedule->isDue('backup:mail', $interval)) {
+        return 0;
+    }
+
     $recipient = config('backup.mail_to');
     if (! $recipient) {
         $this->error('BACKUP_MAIL_TO is not set.');
@@ -62,6 +80,7 @@ Artisan::command('backup:mail {--force : Send even if nothing has changed}', fun
     $fingerprint = $backup->fingerprint();
     $state = $backup->state();
     if (! $this->option('force') && ($state['fingerprint'] ?? null) === $fingerprint) {
+        $schedule->markRun('backup:mail');
         $this->info('No changes since the last backup, no mail sent.');
 
         return 0;
@@ -84,6 +103,7 @@ Artisan::command('backup:mail {--force : Send even if nothing has changed}', fun
         ], isset($state['sent_at']) ? Carbon::parse($state['sent_at'])->format('d.m.Y H:i') : null));
 
         $backup->rememberSent($fingerprint);
+        $schedule->markRun('backup:mail');
         $this->info(sprintf('Backup (%.2f MB) sent to %s.', $sizeMb, $recipient));
     } finally {
         @unlink($path);
@@ -93,5 +113,7 @@ Artisan::command('backup:mail {--force : Send even if nothing has changed}', fun
 })->purpose('Mail a copy of the database when it has changed since the last backup');
 
 if (config('backup.enabled') && config('backup.mail_to')) {
-    Schedule::command('backup:mail')->weeklyOn(0, '04:23')->withoutOverlapping();
+    // Checked every 15 minutes, runs when the last check is 7 days ago: a backup that was missed while
+    // the server was off is sent as soon as it runs again.
+    Schedule::command('backup:mail --if-due')->everyFifteenMinutes()->withoutOverlapping();
 }
