@@ -16,12 +16,19 @@ RecordLoom can take over data, covers and prices from [Discogs](https://www.disc
 
 - **New record:** search by barcode, catalog number or artist and title, pick the pressing and the form is filled
   in (title, artist, label, numbers, country, year, Zusatzinfos, cover). Grading and prices stay manual.
+- **Barcode scanner:** on phones and tablets the barcode can be scanned with the camera (EAN/UPC), in the
+  Discogs search and in the search of the navigation. The navigation opens the record from the collection
+  (or lists all records with this barcode); an unknown barcode offers to add the record via Discogs. Browsers only
+  allow the live camera over **https** (or localhost); over plain http a photo is taken instead and the barcode is
+  read from it.
 - **Link:** every record can store its Discogs release ID; the record page links to Discogs.
-- **Prices:** the record page shows the Discogs price suggestion for the grading of the record and the lowest
-  offer; the suggestion can be used as current price (stored in the price history with vendor "Discogs").
+- **Prices:** the record page shows the lowest offer and the range of the price suggestions (depending on the
+  condition) with the suggestion for the grading of the record. Both can be used as current price, they are stored
+  in the price history with the vendor "Discogs". The highest offer and sale prices are not available in the API.
   Records marked for sale are updated every night (`php artisan discogs:update-prices`, `--all` for all linked records).
-- **Matching:** *Platten → Mit Discogs abgleichen* suggests releases for existing records. Linking only fills in
-  empty fields and a missing cover, nothing is overwritten.
+- **Matching:** *Platten → Mit Discogs abgleichen* suggests releases for existing records. Before linking a
+  comparison shows the existing and the Discogs value of every field; existing values are kept unless chosen
+  otherwise. The search in the record form asks the same way when fields differ.
 
 Setup:
 
@@ -31,6 +38,16 @@ Setup:
    (set `DISCOGS_NIGHTLY_PRICES=false` to switch it off).
 
 Discogs allows 60 requests per minute; search results and releases are cached.
+
+### Weekly backup by mail
+
+Once a week (Sunday 04:23) RecordLoom mails a compressed copy of the SQLite database, but only if the collection
+has changed since the last backup (sessions and cache do not count). Cover images are not included.
+
+1. Configure sending mails in the `.env` (`MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
+   `MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM_ADDRESS`) and set the recipient: `BACKUP_MAIL_TO=you@example.com`
+2. Run the Laravel scheduler with cron: `* * * * * cd /var/www/recordLoom && php artisan schedule:run`
+3. Test it: `php artisan backup:mail --force`
 
 ### Updating an existing installation
 

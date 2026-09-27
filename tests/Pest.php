@@ -15,6 +15,11 @@ pest()->extend(Tests\TestCase::class)
     ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
 
+// The backup uses "VACUUM INTO", which is not possible inside the transaction of RefreshDatabase.
+pest()->extend(Tests\TestCase::class)
+    ->use(Illuminate\Foundation\Testing\DatabaseMigrations::class)
+    ->in('Backup');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

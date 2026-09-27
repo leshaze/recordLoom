@@ -17,6 +17,16 @@
 
         <form method="GET" action="{{ route('records.index') }}" class="card card-body mb-3">
             <input type="hidden" name="sort" value="{{ $v['sort'] }}">
+            @if ($v['barcode'] !== '')
+                <input type="hidden" name="barcode" value="{{ $v['barcode'] }}">
+                <div class="mb-2">
+                    <span class="badge text-bg-info fs-6 fw-normal">
+                        <i class="bi bi-upc-scan"></i> {{ __('Barcode') }} {{ $v['barcode'] }}
+                        <a href="{{ route('records.index', array_filter([...request()->except('barcode', 'page')])) }}" class="text-reset ms-1"
+                            aria-label="{{ __('Filter zurücksetzen') }}"><i class="bi bi-x-lg"></i></a>
+                    </span>
+                </div>
+            @endif
             <input type="hidden" name="dir" value="{{ $v['dir'] }}">
             <div class="row g-2 align-items-end">
                 <div class="col-12 col-lg-3">
@@ -88,7 +98,14 @@
 
         @if ($records->isEmpty())
             <div class="card card-body">
-                @if ($filter->isActive())
+                @if ($v['barcode'] !== '')
+                    <p>{{ __('Keine Platte mit dem Barcode :barcode in der Sammlung.', ['barcode' => $v['barcode']]) }}</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ route('records.create', ['barcode' => $v['barcode']]) }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-lg"></i> {{ __('Neue Platte anlegen und bei Discogs suchen') }}</a>
+                        <a href="{{ route('records.index') }}" class="btn btn-outline-secondary btn-sm">{{ __('Alle Platten') }}</a>
+                    </div>
+                @elseif ($filter->isActive())
                     {{ __('Keine Platten gefunden.') }} <a href="{{ route('records.index') }}">{{ __('Filter zurücksetzen') }}</a>
                 @else
                     {{ __('Noch keine Platten erfasst.') }} <a href="{{ route('records.create') }}">{{ __('Erste Platte anlegen') }}</a>

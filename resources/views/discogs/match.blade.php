@@ -2,7 +2,7 @@
     <div class="container" style="max-width: 70rem;">
         <h1 class="h3 mb-1">{{ __('Mit Discogs abgleichen') }}</h1>
         <p class="text-body-secondary">
-            {{ __('Verknüpfe vorhandene Platten mit der passenden Discogs-Pressung. Vorgeschlagen wird per Barcode, Katalog-Nr. oder Künstler und Titel. Es werden nur leere Felder und ein fehlendes Cover ergänzt, nichts wird überschrieben.') }}
+            {{ __('Verknüpfe vorhandene Platten mit der passenden Discogs-Pressung. Vorgeschlagen wird per Barcode, Katalog-Nr. oder Künstler und Titel. Vor dem Verknüpfen wählst du je Feld, ob der vorhandene Wert oder der von Discogs gelten soll.') }}
         </p>
         <p class="small">
             {{ trans_choice(':count Platte ist verknüpft.|:count Platten sind verknüpft.', $linkedCount) }}
@@ -20,11 +20,11 @@
 
         @forelse ($records as $record)
             <div class="card mb-3" data-discogs-match data-suggestions-url="{{ route('discogs.suggestions', $record) }}"
-                data-link-url="{{ route('discogs.link', $record) }}"
+                data-review-url="{{ route('discogs.review', $record) }}"
                 data-texts="{{ json_encode([
                     'loading' => __('Suche Vorschläge …'),
                     'none' => __('Keine Vorschläge gefunden. Du kannst die Release-ID auch von Hand eintragen.'),
-                    'link' => __('Verknüpfen'),
+                    'link' => __('Vergleichen und verknüpfen'),
                     'show' => __('Auf Discogs ansehen'),
                     'error' => __('Discogs ist gerade nicht erreichbar.'),
                 ]) }}">
@@ -48,9 +48,7 @@
                         <button type="button" class="btn btn-sm btn-outline-info" data-load-suggestions @disabled(! $configured)>
                             <i class="bi bi-search"></i> {{ __('Vorschläge laden') }}
                         </button>
-                        <form method="POST" action="{{ route('discogs.link', $record) }}" class="d-flex gap-2">
-                            @csrf
-                            <input type="hidden" name="fill_missing" value="1">
+                        <form method="GET" action="{{ route('discogs.review', $record) }}" class="d-flex gap-2">
                             <input type="number" name="release_id" min="1" required class="form-control form-control-sm" style="width: 10rem;"
                                 placeholder="{{ __('Release-ID') }}" aria-label="{{ __('Discogs-Release-ID') }}">
                             <button type="submit" class="btn btn-sm btn-outline-primary" @disabled(! $configured)>{{ __('Verknüpfen') }}</button>

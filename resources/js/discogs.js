@@ -1,3 +1,5 @@
+import { Modal } from 'bootstrap';
+
 // Discogs search in the record form: search releases, pick one and fill in the form.
 // All texts from Discogs are inserted with textContent, never as HTML.
 
@@ -25,34 +27,99 @@ function setValue(id, value) {
     }
 }
 
-function fillForm(data) {
-    ['title', 'artist_name', 'label_name', 'catalog_number', 'barcode', 'matrix_number',
-        'country_name', 'release_year', 'reissue_year', 'discogs_release_id'].forEach(field => setValue(field, data[field]));
+const FIELDS = ['kind', 'artist_name', 'title', 'label_name', 'catalog_number', 'barcode', 'matrix_number',
+    'country_name', 'release_year', 'reissue_year'];
 
-    // Names changed, the ids of the autocomplete belong to the old names.
-    ['artist_id', 'label_id', 'country_id'].forEach(field => setValue(field, ''));
+// Hidden id fields of the autocomplete, they belong to the old name.
+const ID_FIELDS = { artist_name: 'artist_id', label_name: 'label_id', country_name: 'country_id' };
 
-    if (data.kind) {
-        const radio = document.getElementById('kind-' + data.kind);
-        if (radio) radio.checked = true;
+function currentValue(field) {
+    if (field === 'kind') {
+        return document.querySelector('input[name=kind]:checked')?.value || '';
     }
+    return (document.getElementById(field)?.value || '').trim();
+}
+
+function setField(field, value) {
+    if (field === 'kind') {
+        const radio = document.getElementById('kind-' + value);
+        if (radio) radio.checked = true;
+        return;
+    }
+    setValue(field, value);
+    if (ID_FIELDS[field]) setValue(ID_FIELDS[field], '');
+}
+
+function hasCover() {
+    return !!document.getElementById('remove_cover') || !!document.getElementById('cover')?.files.length;
+}
+
+function setCover(url) {
+    const coverUrl = document.getElementById('discogs_cover_url');
+    const preview = document.getElementById('cover-preview');
+    if (!coverUrl) return;
+    coverUrl.value = url;
+    if (preview) {
+        preview.src = url;
+        preview.referrerPolicy = 'no-referrer';
+        preview.classList.remove('d-none');
+    }
+}
+
+/**
+ * Differences between the form and the Discogs data. Empty form fields are no conflict, they are filled directly.
+ */
+function conflicts(data) {
+    const list = [];
+    FIELDS.forEach(field => {
+        const discogs = data[field] === undefined || data[field] === null ? '' : String(data[field]);
+        const current = currentValue(field);
+        if (discogs !== '' && current !== '' && current.toLowerCase() !== discogs.toLowerCase()) {
+            list.push({ field, current, discogs });
+        }
+    });
+    if (data.cover_url && hasCover()) {
+        list.push({ field: 'cover', current: null, discogs: data.cover_url });
+    }
+    return list;
+}
+
+function applyData(data, keep) {
+    FIELDS.forEach(field => {
+        const value = data[field];
+        if (value !== undefined && value !== null && value !== '' && !keep.has(field)) {
+            setField(field, value);
+        }
+    });
+    setValue('discogs_release_id', data.discogs_release_id);
 
     (data.editions || []).forEach(id => {
         const checkbox = document.getElementById('edition-' + id);
         if (checkbox) checkbox.checked = true;
     });
 
-    const coverUrl = document.getElementById('discogs_cover_url');
-    const preview = document.getElementById('cover-preview');
-    const upload = document.getElementById('cover');
-    if (coverUrl && data.cover_url && !(upload && upload.files.length)) {
-        coverUrl.value = data.cover_url;
-        if (preview) {
-            preview.src = data.cover_url;
-            preview.referrerPolicy = 'no-referrer';
-            preview.classList.remove('d-none');
-        }
+    if (data.cover_url && !keep.has('cover')) {
+        setCover(data.cover_url);
     }
+}
+
+function radioCell(name, value, checked, content) {
+    const cell = element('td');
+    const wrapper = element('div', 'form-check d-flex gap-2 align-items-center');
+    const input = element('input', 'form-check-input');
+    Object.assign(input, { type: 'radio', name, value, id: name + '-' + value, checked });
+    const label = element('label', 'form-check-label text-break');
+    label.htmlFor = input.id;
+    label.append(content);
+    wrapper.append(input, label);
+    cell.append(wrapper);
+    return cell;
+}
+
+function coverImage(src) {
+    const img = element('img', 'rounded object-fit-cover');
+    Object.assign(img, { src, alt: '', width: 64, height: 64, referrerPolicy: 'no-referrer' });
+    return img;
 }
 
 export function initDiscogs() {
@@ -70,11 +137,62 @@ export function initDiscogs() {
         status.className = 'small mt-2 ' + (error ? 'text-danger' : 'text-body-secondary');
     };
 
+    const modalElement = document.getElementById('discogs-compare');
+    const modal = modalElement ? Modal.getOrCreateInstance(modalElement) : null;
+    let pending = null;
+
+    function showComparison(data, list) {
+        const rows = document.getElementById('discogs-compare-rows');
+        rows.replaceChildren();
+        list.forEach(({ field, current, discogs }) => {
+            const row = element('tr');
+            const label = field === 'cover' ? texts.cover : (texts.fields || {})[field] || field;
+            row.append(element('th', 'fw-semibold', label));
+            const name = 'compare-' + field;
+            if (field === 'cover') {
+                const existing = document.querySelector('form .card img[alt^="Cover"]');
+                row.append(radioCell(name, 'keep', true, existing ? coverImage(existing.src) : document.createTextNode(texts.cover)));
+                row.append(radioCell(name, 'discogs', false, coverImage(discogs)));
+            } else {
+                row.append(radioCell(name, 'keep', true, document.createTextNode(current)));
+                row.append(radioCell(name, 'discogs', false, document.createTextNode(discogs)));
+            }
+            rows.append(row);
+        });
+        pending = { data, list };
+        modal.show();
+    }
+
+    document.getElementById('discogs-compare-apply')?.addEventListener('click', () => {
+        if (!pending) return;
+        const keep = new Set(pending.list
+            .filter(({ field }) => document.querySelector('input[name="compare-' + field + '"]:checked')?.value !== 'discogs')
+            .map(({ field }) => field));
+        applyData(pending.data, keep);
+        pending = null;
+        modal.hide();
+        results.replaceChildren();
+        showStatus(texts.applied);
+    });
+
+    modalElement?.querySelectorAll('[data-compare-all]').forEach(button => {
+        button.addEventListener('click', () => {
+            modalElement.querySelectorAll('input[type=radio][value="' + button.dataset.compareAll + '"]')
+                .forEach(radio => { radio.checked = true; });
+        });
+    });
+
     async function apply(id) {
         showStatus(texts.loading);
         try {
             const data = await getJson(card.dataset.releaseUrl + '/' + encodeURIComponent(id));
-            fillForm(data);
+            const list = conflicts(data);
+            if (list.length && modal) {
+                showStatus('');
+                showComparison(data, list);
+                return;
+            }
+            applyData(data, new Set());
             results.replaceChildren();
             showStatus(texts.applied);
         } catch (error) {
@@ -142,6 +260,14 @@ export function initDiscogs() {
     }
 
     button.addEventListener('click', search);
+    // A scanned barcode (button with data-barcode-scan="discogs") is searched right away.
+    document.addEventListener('barcode:discogs', event => {
+        query.value = event.detail.code;
+        search();
+    });
+    if (query.hasAttribute('data-autosearch') && query.value) {
+        search();
+    }
     query.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -152,8 +278,6 @@ export function initDiscogs() {
 
 // Matching page: load suggestions for a record and link one of them.
 export function initDiscogsMatching() {
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-
     document.querySelectorAll('[data-discogs-match]').forEach(card => {
         const texts = JSON.parse(card.dataset.texts || '{}');
         const status = card.querySelector('[data-status]');
@@ -188,18 +312,9 @@ export function initDiscogsMatching() {
                     }
                     row.append(info);
 
-                    const form = element('form', 'flex-shrink-0');
-                    form.method = 'POST';
-                    form.action = card.dataset.linkUrl;
-                    [['_token', csrf], ['release_id', item.id], ['fill_missing', '1']].forEach(([name, value]) => {
-                        const input = element('input');
-                        Object.assign(input, { type: 'hidden', name, value });
-                        form.append(input);
-                    });
-                    const submit = element('button', 'btn btn-sm btn-info', texts.link);
-                    submit.type = 'submit';
-                    form.append(submit);
-                    row.append(form);
+                    const review = element('a', 'btn btn-sm btn-info flex-shrink-0', texts.link);
+                    review.href = card.dataset.reviewUrl + '?' + new URLSearchParams({ release_id: item.id });
+                    row.append(review);
 
                     results.append(row);
                 });
@@ -207,6 +322,16 @@ export function initDiscogsMatching() {
                 status.className = 'small mt-2 text-danger';
                 status.textContent = error.message || texts.error;
             }
+        });
+    });
+}
+
+// Review page: choose the existing or the Discogs value for all fields at once.
+export function initDiscogsReview() {
+    document.querySelectorAll('#discogs-review [data-choose-all]').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('#discogs-review input[type=radio][value="' + button.dataset.chooseAll + '"]')
+                .forEach(radio => { radio.checked = true; });
         });
     });
 }

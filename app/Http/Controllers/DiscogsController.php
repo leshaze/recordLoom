@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Country;
 use App\Models\Record;
 use App\Services\Discogs\DiscogsClient;
+use App\Services\Discogs\DiscogsComparison;
 use App\Services\Discogs\DiscogsCovers;
 use App\Services\Discogs\DiscogsException;
 use App\Services\Discogs\DiscogsPrices;
@@ -83,13 +83,39 @@ class DiscogsController extends Controller
     }
 
     /**
-     * Links a record with a release. Optionally fills in empty fields and a missing cover, nothing is overwritten.
+     * Comparison of a record with a release: for every field the existing value or the Discogs value can be chosen.
      */
-    public function link(Request $request, Record $record): RedirectResponse
+    public function review(Request $request, Record $record, DiscogsComparison $comparison)
+    {
+        $releaseId = (int) $request->validate(['release_id' => ['required', 'integer', 'min:1']])['release_id'];
+
+        try {
+            $release = $this->releaseData($releaseId);
+        } catch (DiscogsException $exception) {
+            return redirect()->route('discogs.match')->with('error', $exception->getMessage());
+        }
+
+        return view('discogs.review', [
+            'record' => $record->load(['artist', 'label', 'country', 'editions']),
+            'releaseId' => $releaseId,
+            'release' => $release,
+            'rows' => $comparison->rows($record, $release),
+            'newEditions' => $comparison->newEditions($record, $release),
+        ]);
+    }
+
+    /**
+     * Links a record with a release and takes over the chosen values.
+     */
+    public function link(Request $request, Record $record, DiscogsComparison $comparison): RedirectResponse
     {
         $data = $request->validate([
             'release_id' => ['required', 'integer', 'min:1'],
-            'fill_missing' => ['nullable', 'boolean'],
+            'use' => ['nullable', 'array'],
+            'use.*' => ['in:'.DiscogsComparison::KEEP.','.DiscogsComparison::DISCOGS],
+            'editions' => ['nullable', 'array'],
+            'editions.*' => ['integer', 'exists:editions,id'],
+            'cover' => ['nullable', 'in:'.DiscogsComparison::KEEP.','.DiscogsComparison::DISCOGS],
         ]);
 
         try {
@@ -99,28 +125,20 @@ class DiscogsController extends Controller
         }
 
         $this->setRelease($record, (int) $data['release_id']);
-        $warning = null;
-
-        if ($request->boolean('fill_missing')) {
-            foreach (['catalog_number', 'barcode', 'matrix_number', 'release_year', 'reissue_year'] as $field) {
-                if (blank($record->{$field}) && filled($release[$field] ?? null)) {
-                    $record->{$field} = $release[$field];
-                }
-            }
-            if (! $record->country_id && filled($release['country_name'] ?? null)) {
-                $record->country_id = Country::firstOrCreate(['name' => $release['country_name']])->id;
-            }
-            if (! empty($release['editions'])) {
-                $record->editions()->syncWithoutDetaching($release['editions']);
-            }
-            if (! $record->hasCover() && filled($release['cover_url'] ?? null)) {
-                $warning = $this->covers->store($record, $release['cover_url']);
-            }
-        }
-
+        $comparison->apply($record, $release, $data['use'] ?? []);
         $record->save();
 
-        return back()
+        if (! empty($data['editions'])) {
+            $record->editions()->syncWithoutDetaching($data['editions']);
+        }
+
+        $warning = null;
+        if (($data['cover'] ?? null) === DiscogsComparison::DISCOGS && filled($release['cover_url'] ?? null)) {
+            $warning = $this->covers->store($record, $release['cover_url']);
+            $record->save();
+        }
+
+        return redirect()->route('discogs.match')
             ->with('info', __('Platte „:title“ wurde mit Discogs verknüpft.', ['title' => $record->title]))
             ->with('warning', $warning);
     }
@@ -144,23 +162,27 @@ class DiscogsController extends Controller
     public function updatePrices(Record $record, DiscogsPrices $prices): RedirectResponse
     {
         try {
-            $warning = $prices->update($record);
+            $prices->update($record);
         } catch (DiscogsException $exception) {
             return back()->with('error', $exception->getMessage());
         }
 
-        return back()->with('info', __('Marktdaten von Discogs wurden aktualisiert.'))->with('warning', $warning);
+        return back()->with('info', __('Marktdaten von Discogs wurden aktualisiert.'));
     }
 
-    public function applyPrice(Record $record, DiscogsPrices $prices): RedirectResponse
+    public function applyPrice(Request $request, Record $record, DiscogsPrices $prices): RedirectResponse
     {
+        $source = $request->validate([
+            'source' => ['required', 'in:'.DiscogsPrices::SOURCE_LOWEST.','.DiscogsPrices::SOURCE_SUGGESTION],
+        ])['source'];
+
         try {
-            $prices->applySuggestedPrice($record);
+            $prices->apply($record, $source);
         } catch (DiscogsException $exception) {
             return back()->with('error', $exception->getMessage());
         }
 
-        return back()->with('info', __('Der Preisvorschlag von Discogs wurde als aktueller Preis übernommen.'));
+        return back()->with('info', __('Der Preis von Discogs wurde als aktueller Preis übernommen und in der Preisentwicklung gespeichert.'));
     }
 
     /**

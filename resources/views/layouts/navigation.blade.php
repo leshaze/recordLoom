@@ -3,6 +3,11 @@
         <a class="navbar-brand" href="{{ route('dashboard') }}">
             RecordLoom <i class="bi bi-vinyl-fill"></i>
         </a>
+        {{-- On phones the search is in the collapsed menu, the scanner stays reachable next to it. --}}
+        <button type="button" class="btn btn-outline-secondary ms-auto me-2 d-lg-none" data-barcode-scan="collection"
+            title="{{ __('Barcode scannen und in der Sammlung suchen') }}" aria-label="{{ __('Barcode scannen und in der Sammlung suchen') }}">
+            <i class="bi bi-upc-scan"></i>
+        </button>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
             aria-controls="mainNavigation" aria-expanded="false" aria-label="{{ __('Navigation umschalten') }}">
             <span class="navbar-toggler-icon"></span>
@@ -54,7 +59,13 @@
                 @endforeach
             </div>
             <form class="d-flex" role="search" action="{{ route('records.index') }}" method="GET">
-                <input class="form-control" type="search" id="search" name="q" placeholder="{{ __('Suchen …') }}" aria-label="{{ __('Suchen') }}">
+                <div class="input-group">
+                    <input class="form-control" type="search" id="search" name="q" placeholder="{{ __('Suchen …') }}" aria-label="{{ __('Suchen') }}">
+                    <button type="button" class="btn btn-outline-secondary" data-barcode-scan="collection"
+                        title="{{ __('Barcode scannen und in der Sammlung suchen') }}" aria-label="{{ __('Barcode scannen und in der Sammlung suchen') }}">
+                        <i class="bi bi-upc-scan"></i>
+                    </button>
+                </div>
             </form>
         </div>
     </div>

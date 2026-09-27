@@ -46,6 +46,7 @@ class RecordFilter
 
         $this->values = [
             'q' => trim((string) $request->query('q', '')),
+            'barcode' => self::normalizeBarcode((string) $request->query('barcode', '')),
             'kind' => in_array($request->query('kind'), ['LP', 'CD'], true) ? $request->query('kind') : null,
             'label' => $request->integer('label') ?: null,
             'country' => $request->integer('country') ?: null,
@@ -55,6 +56,29 @@ class RecordFilter
             'dir' => $request->query('dir') === 'desc' ? 'desc' : 'asc',
             'per_page' => in_array($perPage, self::PER_PAGE, true) ? $perPage : self::PER_PAGE[0],
         ];
+    }
+
+    /**
+     * Only the digits of a barcode ("5 099996 602317" → "5099996602317").
+     */
+    public static function normalizeBarcode(string $barcode): string
+    {
+        return substr(preg_replace('/\D/', '', $barcode), 0, 20);
+    }
+
+    /**
+     * Records with the barcode, independent of spaces or dashes and of the leading zero
+     * that turns a 12 digit UPC into a 13 digit EAN.
+     */
+    public static function whereBarcode(Builder $query, string $barcode): Builder
+    {
+        $digits = ltrim(self::normalizeBarcode($barcode), '0');
+        $cleaned = "REPLACE(REPLACE(REPLACE(COALESCE(barcode, ''), ' ', ''), '-', ''), '.', '')";
+        $stored = in_array($query->getConnection()->getDriverName(), ['mysql', 'mariadb', 'sqlsrv'], true)
+            ? "TRIM(LEADING '0' FROM {$cleaned})"
+            : "LTRIM({$cleaned}, '0')";
+
+        return $query->whereRaw("{$stored} = ?", [$digits === '' ? '-' : $digits]);
     }
 
     public function query(): Builder
@@ -73,6 +97,10 @@ class RecordFilter
                     ->orWhereHas('artist', fn (Builder $query) => $query->where('name', 'like', $like))
                     ->orWhereHas('label', fn (Builder $query) => $query->where('name', 'like', $like));
             });
+        }
+
+        if ($v['barcode'] !== '') {
+            self::whereBarcode($query, $v['barcode']);
         }
 
         $query->when($v['kind'], fn (Builder $query, $kind) => $query->where('kind', $kind))
@@ -118,6 +146,6 @@ class RecordFilter
     {
         $v = $this->values;
 
-        return $v['q'] !== '' || $v['kind'] || $v['label'] || $v['country'] || $v['edition'] || $v['status'];
+        return $v['q'] !== '' || $v['barcode'] !== '' || $v['kind'] || $v['label'] || $v['country'] || $v['edition'] || $v['status'];
     }
 }
