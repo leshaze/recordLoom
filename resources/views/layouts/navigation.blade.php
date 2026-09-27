@@ -10,7 +10,7 @@
         <div class="collapse navbar-collapse" id="mainNavigation">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item dropdown">
-                    <a href="#" @class(['nav-link dropdown-toggle', 'active' => request()->routeIs('records.*', 'editions.*')]) data-bs-toggle="dropdown">{{ __('Platten') }}</a>
+                    <a href="#" @class(['nav-link dropdown-toggle', 'active' => request()->routeIs('records.*', 'editions.*', 'discogs.*')]) data-bs-toggle="dropdown">{{ __('Platten') }}</a>
                     <div class="dropdown-menu">
                         <a href="{{ route('records.index') }}" class="dropdown-item">{{ __('Alle Platten') }}</a>
                         <a href="{{ route('records.index', ['status' => 'selling']) }}" class="dropdown-item">{{ __('Zum Verkauf vorgemerkt') }}</a>
@@ -21,6 +21,7 @@
                         <a href="{{ route('records.export') }}" class="dropdown-item"><i class="bi bi-download"></i> {{ __('CSV-Export (alle)') }}</a>
                         <div class="dropdown-divider"></div>
                         <a href="{{ route('editions.index') }}" class="dropdown-item"><i class="bi bi-tags"></i> {{ __('Zusatzinfos verwalten') }}</a>
+                        <a href="{{ route('discogs.match') }}" class="dropdown-item"><i class="bi bi-link-45deg"></i> {{ __('Mit Discogs abgleichen') }}</a>
                     </div>
                 </li>
                 <li class="nav-item dropdown">

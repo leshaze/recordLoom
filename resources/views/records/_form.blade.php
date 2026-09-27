@@ -8,6 +8,53 @@
 
 <p class="small text-body-secondary mb-3">{!! __('Felder mit :star sind Pflichtfelder.', ['star' => '<span class="text-danger">*</span>']) !!}</p>
 
+<div class="card mb-3 border-info-subtle" id="discogs-card"
+    data-search-url="{{ route('discogs.search') }}" data-release-url="{{ url('discogs/releases') }}"
+    data-texts="{{ json_encode([
+        'searching' => __('Suche bei Discogs …'),
+        'loading' => __('Lade Angaben von Discogs …'),
+        'none' => __('Keine Treffer. Versuche es mit weniger oder anderen Suchbegriffen.'),
+        'apply' => __('Übernehmen'),
+        'applied' => __('Angaben von Discogs übernommen. Bitte prüfen und Grading und Preis ergänzen.'),
+        'error' => __('Discogs ist gerade nicht erreichbar.'),
+        'show' => __('Auf Discogs ansehen'),
+    ]) }}">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-vinyl"></i> Discogs</span>
+        @if ($record->discogsUrl())
+            <a href="{{ $record->discogsUrl() }}" target="_blank" rel="noopener noreferrer" class="small">{{ __('Auf Discogs ansehen') }} <i class="bi bi-box-arrow-up-right"></i></a>
+        @endif
+    </div>
+    <div class="card-body">
+        @if ($discogsConfigured)
+            <label for="discogs-query" class="form-label">{{ __('Bei Discogs suchen und Angaben übernehmen') }}</label>
+            <div class="input-group">
+                <input type="search" id="discogs-query" class="form-control" autocomplete="off"
+                    placeholder="{{ __('Barcode, Katalog-Nr. oder Künstler und Titel') }}">
+                <button type="button" class="btn btn-outline-info" id="discogs-search"><i class="bi bi-search"></i> {{ __('Suchen') }}</button>
+            </div>
+            <div class="form-text">{{ __('Nach der Auswahl werden Titel, Künstler, Label, Nummern, Land, Jahr, Zusatzinfos und Cover ausgefüllt. Grading und Preise bleiben unverändert.') }}</div>
+            <div id="discogs-status" class="small mt-2" role="status"></div>
+            <div id="discogs-results" class="list-group mt-2"></div>
+        @else
+            <div class="small text-body-secondary">{{ __('Discogs ist nicht eingerichtet. Bitte DISCOGS_TOKEN in der .env eintragen.') }}</div>
+        @endif
+
+        <div class="row g-2 mt-2 align-items-end">
+            <div class="col-sm-5">
+                <label for="discogs_release_id" class="form-label small mb-1">{{ __('Discogs-Release-ID') }}</label>
+                <input type="number" min="1" name="discogs_release_id" id="discogs_release_id"
+                    class="form-control form-control-sm @error('discogs_release_id') is-invalid @enderror"
+                    value="{{ old('discogs_release_id', $record->discogs_release_id) }}">
+                @error('discogs_release_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+            <div class="col-sm-7 small text-body-secondary">{{ __('Wird bei der Übernahme gesetzt. Leer lassen, um die Verknüpfung zu entfernen.') }}</div>
+        </div>
+        <input type="hidden" name="discogs_cover_url" id="discogs_cover_url" value="{{ old('discogs_cover_url') }}">
+        <div class="small text-body-secondary mt-2">{{ __('Daten von') }} <a href="https://www.discogs.com" target="_blank" rel="noopener noreferrer">Discogs</a></div>
+    </div>
+</div>
+
 <div class="card mb-3">
     <div class="card-header">{{ __('Stammdaten') }}</div>
     <div class="card-body"><div class="row g-3 mb-0">

@@ -1,8 +1,12 @@
 {
+    ":count Angebot|:count Angebote": ":count Angebot|:count Angebote",
     ":count Eintrag|:count Einträge": ":count Eintrag|:count Einträge",
     ":count Platte importiert.|:count Platten importiert.": ":count Platte importiert.|:count Platten importiert.",
+    ":count Platte ist verknüpft.|:count Platten sind verknüpft.": ":count Platte ist verknüpft.|:count Platten sind verknüpft.",
+    ":count Platte ohne Verknüpfung.|:count Platten ohne Verknüpfung.": ":count Platte ohne Verknüpfung.|:count Platten ohne Verknüpfung.",
     ":count Platte|:count Platten": ":count Platte|:count Platten",
     ":count Zeile übersprungen, weil die ID schon existiert.|:count Zeilen übersprungen, weil die ID schon existiert.": ":count Zeile übersprungen, weil die ID schon existiert.|:count Zeilen übersprungen, weil die ID schon existiert.",
+    ":count übersprungene Platte anzeigen|:count übersprungene Platten anzeigen": ":count übersprungene Platte anzeigen|:count übersprungene Platten anzeigen",
     "A new verification link has been sent to the email address you provided during registration.": "Ein neuer Bestätigungslink wurde an deine E-Mail-Adresse geschickt.",
     "A new verification link has been sent to your email address.": "Ein neuer Bestätigungslink wurde an deine E-Mail-Adresse geschickt.",
     "Already registered?": "Schon registriert?",

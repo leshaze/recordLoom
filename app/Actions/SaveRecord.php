@@ -24,7 +24,7 @@ class SaveRecord
     private const COLUMNS = [
         'kind', 'title', 'catalog_number', 'matrix_number', 'barcode', 'archive_number',
         'release_year', 'reissue_year', 'grading_media', 'grading_cover',
-        'current_price', 'buy_price', 'note', 'sold_on', 'sold_to', 'sold_price',
+        'current_price', 'buy_price', 'note', 'sold_on', 'sold_to', 'sold_price', 'discogs_release_id',
     ];
 
     private const FLAGS = ['selling', 'sold', 'lost'];
@@ -36,6 +36,7 @@ class SaveRecord
     {
         return DB::transaction(function () use ($record, $data, $cover, $removeCover) {
             $oldPrice = $record->exists ? $record->getOriginal('current_price') : null;
+            $oldRelease = $record->exists ? $record->getOriginal('discogs_release_id') : null;
 
             foreach (self::COLUMNS as $column) {
                 if (array_key_exists($column, $data)) {
@@ -66,6 +67,16 @@ class SaveRecord
                 $record->platform_id = filled($data['platform'])
                     ? $this->resolve(Platform::class, $data['platform'], $data['platform_id'] ?? null)
                     : null;
+            }
+
+            if (array_key_exists('discogs_release_id', $data) && (int) $oldRelease !== (int) $record->discogs_release_id) {
+                // Market data belongs to the old release.
+                $record->discogs_price_suggestions = null;
+                $record->discogs_lowest_price = null;
+                $record->discogs_currency = null;
+                $record->discogs_num_for_sale = null;
+                $record->discogs_prices_updated_at = null;
+                $record->discogs_ignored_at = null;
             }
 
             $record->save();

@@ -42,6 +42,7 @@ class RecordCsv
         'Verkaufspreis' => 'sold_price',
         'Verloren' => 'lost',
         'Notiz' => 'note',
+        'Discogs-ID' => 'discogs_release_id',
     ];
 
     public const FLAGS = ['selling', 'sold', 'lost'];
@@ -94,6 +95,7 @@ class RecordCsv
             self::price($record->sold_price),
             $record->lost ? 'ja' : 'nein',
             $record->note,
+            $record->discogs_release_id,
         ];
     }
 

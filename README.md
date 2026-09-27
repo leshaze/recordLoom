@@ -10,6 +10,28 @@ A small CRM project to archive records.
 - CSV export (of the filtered list) and CSV import of new records
 - Dashboard with key figures and the latest records
 
+### Discogs
+
+RecordLoom can take over data, covers and prices from [Discogs](https://www.discogs.com):
+
+- **New record:** search by barcode, catalog number or artist and title, pick the pressing and the form is filled
+  in (title, artist, label, numbers, country, year, Zusatzinfos, cover). Grading and prices stay manual.
+- **Link:** every record can store its Discogs release ID; the record page links to Discogs.
+- **Prices:** the record page shows the Discogs price suggestion for the grading of the record and the lowest
+  offer; the suggestion can be used as current price (stored in the price history with vendor "Discogs").
+  Records marked for sale are updated every night (`php artisan discogs:update-prices`, `--all` for all linked records).
+- **Matching:** *Platten → Mit Discogs abgleichen* suggests releases for existing records. Linking only fills in
+  empty fields and a missing cover, nothing is overwritten.
+
+Setup:
+
+1. On discogs.com: *Settings → Developers → Generate new token* and add it to the `.env`: `DISCOGS_TOKEN=...`
+2. For price suggestions fill in the seller settings of the Discogs account (Discogs requires this).
+3. For the nightly update run the Laravel scheduler, e.g. with cron: `* * * * * cd /var/www/recordLoom && php artisan schedule:run`
+   (set `DISCOGS_NIGHTLY_PRICES=false` to switch it off).
+
+Discogs allows 60 requests per minute; search results and releases are cached.
+
 ### Updating an existing installation
 
 The migration `2026_09_26_100000_improve_records_data_model` converts existing data:

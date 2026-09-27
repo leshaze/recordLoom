@@ -83,6 +83,84 @@
                     </dl></div>
                 </div>
 
+                <div class="card mb-3 border-info-subtle">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <span><i class="bi bi-vinyl"></i> Discogs</span>
+                        @if ($record->discogsUrl())
+                            <a href="{{ $record->discogsUrl() }}" target="_blank" rel="noopener noreferrer" class="small">{{ __('Auf Discogs ansehen') }} <i class="bi bi-box-arrow-up-right"></i></a>
+                        @endif
+                    </div>
+                    <div class="card-body">
+                        @if (! $record->discogs_release_id)
+                            <p class="mb-2">{{ __('Diese Platte ist noch nicht mit Discogs verknüpft.') }}</p>
+                            <a href="{{ route('records.edit', $record) }}" class="btn btn-sm btn-outline-info">{{ __('Im Formular bei Discogs suchen') }}</a>
+                            <a href="{{ route('discogs.match') }}" class="btn btn-sm btn-outline-secondary">{{ __('Bestand abgleichen') }}</a>
+                        @else
+                            @php
+                                $suggested = $record->discogsSuggestedPrice();
+                                $currency = $record->discogs_currency;
+                                $money = fn ($value) => $value === null ? '–' : (($currency ?? 'EUR') === 'EUR' ? \App\Support\Format::euro($value) : number_format((float) $value, 2).' '.$currency);
+                            @endphp
+                            @if ($record->discogs_prices_updated_at)
+                                <dl class="row mb-2">
+                                    <dt class="col-sm-4">{{ __('Preisvorschlag') }}</dt>
+                                    <dd class="col-sm-8">
+                                        @if ($suggested)
+                                            <strong>{{ $money($suggested['value']) }}</strong>
+                                            <span class="small text-body-secondary">({{ $record->discogsCondition() }})</span>
+                                        @elseif (! $record->grading_media)
+                                            <span class="text-body-secondary">{{ __('Für einen Vorschlag bitte Grading Media setzen.') }}</span>
+                                        @else
+                                            –
+                                        @endif
+                                    </dd>
+                                    <dt class="col-sm-4">{{ __('Günstigstes Angebot') }}</dt>
+                                    <dd class="col-sm-8">{{ $money($record->discogs_lowest_price) }}
+                                        @if ($record->discogs_num_for_sale !== null)
+                                            <span class="small text-body-secondary">({{ trans_choice(':count Angebot|:count Angebote', $record->discogs_num_for_sale) }})</span>
+                                        @endif
+                                    </dd>
+                                    <dt class="col-sm-4">{{ __('Stand') }}</dt>
+                                    <dd class="col-sm-8">{{ \App\Support\Format::date($record->discogs_prices_updated_at) }} {{ $record->discogs_prices_updated_at->format('H:i') }}</dd>
+                                </dl>
+                                @if (is_array($record->discogs_price_suggestions) && count($record->discogs_price_suggestions))
+                                    <details class="small mb-3">
+                                        <summary>{{ __('Alle Preisvorschläge') }}</summary>
+                                        <table class="table table-sm small mt-2 mb-0">
+                                            @foreach ($record->discogs_price_suggestions as $condition => $price)
+                                                <tr @class(['fw-semibold' => $condition === $record->discogsCondition()])>
+                                                    <td>{{ $condition }}</td>
+                                                    <td class="text-end">{{ $money($price['value'] ?? null) }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </table>
+                                    </details>
+                                @endif
+                            @else
+                                <p class="text-body-secondary">{{ __('Noch keine Marktdaten geladen.') }}</p>
+                            @endif
+                            <div class="d-flex flex-wrap gap-2">
+                                <form method="POST" action="{{ route('discogs.prices', $record) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-info"><i class="bi bi-arrow-repeat"></i> {{ __('Marktdaten aktualisieren') }}</button>
+                                </form>
+                                @if ($suggested)
+                                    <form method="POST" action="{{ route('discogs.apply-price', $record) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-info"><i class="bi bi-check2"></i> {{ __('Vorschlag als aktuellen Preis übernehmen') }}</button>
+                                    </form>
+                                @endif
+                                <form method="POST" action="{{ route('discogs.unlink', $record) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">{{ __('Verknüpfung entfernen') }}</button>
+                                </form>
+                            </div>
+                        @endif
+                        <div class="small text-body-secondary mt-2">{{ __('Daten von') }} <a href="https://www.discogs.com" target="_blank" rel="noopener noreferrer">Discogs</a></div>
+                    </div>
+                </div>
+
                 @if ($record->sold)
                     <div class="card mb-3">
                         <div class="card-header">{{ __('Verkauf') }}</div>

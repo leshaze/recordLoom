@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Record;
+use App\Services\Discogs\DiscogsException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -23,6 +24,25 @@ class CoverStorage
         $name = 'covers/'.$record->id.'-'.Str::random(12);
         $record->cover_path = $file->storeAs($name.'.'.$file->extension(), options: self::DISK) ?: null;
         $record->cover_thumbnail_path = self::thumbnail($file, $name.'-thumb.jpg');
+    }
+
+    /**
+     * Stores image data (e.g. downloaded from Discogs). The content must be a valid image.
+     */
+    public static function storeContents(Record $record, string $content, string $extension): void
+    {
+        if (@getimagesizefromstring($content) === false) {
+            throw new DiscogsException(__('Das Cover ist kein gültiges Bild.'));
+        }
+
+        $temporary = tempnam(sys_get_temp_dir(), 'cover');
+        file_put_contents($temporary, $content);
+
+        try {
+            self::store($record, new UploadedFile($temporary, 'cover.'.$extension, test: true));
+        } finally {
+            @unlink($temporary);
+        }
     }
 
     public static function delete(Record $record): void
