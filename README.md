@@ -35,8 +35,9 @@ Setup:
 
 1. On discogs.com: *Settings → Developers → Generate new token* and add it to the `.env`: `DISCOGS_TOKEN=...`
 2. For price suggestions fill in the seller settings of the Discogs account (Discogs requires this).
-3. For the nightly update run the Laravel scheduler, e.g. with cron: `* * * * * cd /var/www/recordLoom && php artisan schedule:run`
-   (set `DISCOGS_NIGHTLY_PRICES=false` to switch it off).
+3. The automatic daily price update is off by default. To switch it on set `DISCOGS_NIGHTLY_PRICES=true` and run
+   the Laravel scheduler, e.g. with cron: `* * * * * cd /var/www/recordLoom && php artisan schedule:run`.
+   Without it prices are updated per record or with `php artisan discogs:update-prices --all`.
 
 Discogs allows 60 requests per minute; search results and releases are cached.
 
@@ -47,7 +48,7 @@ since the last backup (sessions and cache do not count). Cover images are not in
 
 The server does not have to run all the time (e.g. a Raspberry Pi): the scheduler checks every 15 minutes whether
 the last check is 7 days ago, so a backup that was missed while the server was off is caught up at most 15 minutes
-after it is running again. The Discogs market data works the same way with 24 hours
+after it is running again. The automatic Discogs price update (if enabled) works the same way with 24 hours
 (`BACKUP_INTERVAL_DAYS`, `DISCOGS_PRICE_INTERVAL_HOURS`).
 
 1. Configure sending mails in the `.env` (`MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
