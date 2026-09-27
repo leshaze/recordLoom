@@ -20,9 +20,11 @@ return new class extends Migration
 
     public function up(): void
     {
-        Schema::table('editions', function (Blueprint $table) {
-            $table->string('name_en')->nullable();
-        });
+        if (! Schema::hasColumn('editions', 'name_en')) {
+            Schema::table('editions', function (Blueprint $table) {
+                $table->string('name_en')->nullable();
+            });
+        }
 
         foreach (self::DEFAULTS as $german => $english) {
             DB::table('editions')->where('name', $german)->whereNull('name_en')->update(['name_en' => $english]);

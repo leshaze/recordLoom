@@ -7,20 +7,27 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
+     * Table => indexed columns. Existing indexes are skipped, so the migration can safely run again.
+     */
+    private const INDEXES = [
+        'records' => [['artist_id'], ['label_id'], ['platform_id'], ['selling', 'sold']],
+        'price_history' => [['record_id']],
+    ];
+
+    /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::table('records', function (Blueprint $table) {
-            $table->index('artist_id');
-            $table->index('label_id');
-            $table->index('platform_id');
-            $table->index(['selling', 'sold']);
-        });
-
-        Schema::table('price_history', function (Blueprint $table) {
-            $table->index('record_id');
-        });
+        foreach (self::INDEXES as $tableName => $indexes) {
+            Schema::table($tableName, function (Blueprint $table) use ($tableName, $indexes) {
+                foreach ($indexes as $columns) {
+                    if (! Schema::hasIndex($tableName, $columns)) {
+                        $table->index($columns);
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -28,15 +35,14 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('records', function (Blueprint $table) {
-            $table->dropIndex(['artist_id']);
-            $table->dropIndex(['label_id']);
-            $table->dropIndex(['platform_id']);
-            $table->dropIndex(['selling', 'sold']);
-        });
-
-        Schema::table('price_history', function (Blueprint $table) {
-            $table->dropIndex(['record_id']);
-        });
+        foreach (self::INDEXES as $tableName => $indexes) {
+            Schema::table($tableName, function (Blueprint $table) use ($tableName, $indexes) {
+                foreach ($indexes as $columns) {
+                    if (Schema::hasIndex($tableName, $columns)) {
+                        $table->dropIndex($columns);
+                    }
+                }
+            });
+        }
     }
 };

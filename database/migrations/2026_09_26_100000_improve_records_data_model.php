@@ -18,6 +18,18 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Skip what already exists, so the migration can safely run again on a converted database.
+        if (Schema::hasColumn('records', 'release_date')) {
+            $this->convertRecords();
+        }
+
+        if (! Schema::hasTable('editions')) {
+            $this->createEditions();
+        }
+    }
+
+    private function convertRecords(): void
+    {
         Schema::table('records', function (Blueprint $table) {
             $table->unsignedSmallInteger('release_year')->nullable();
             $table->unsignedSmallInteger('reissue_year')->nullable();
@@ -26,7 +38,10 @@ return new class extends Migration
             $table->string('cover_thumbnail_path')->nullable();
         });
 
-        DB::table('records')->where('for_sale', true)->update(['selling' => true]);
+        $hasForSale = Schema::hasColumn('records', 'for_sale');
+        if ($hasForSale) {
+            DB::table('records')->where('for_sale', true)->update(['selling' => true]);
+        }
 
         DB::table('records')->orderBy('id')->each(function ($record) {
             $notes = [];
@@ -59,10 +74,13 @@ return new class extends Migration
             ]);
         });
 
-        Schema::table('records', function (Blueprint $table) {
-            $table->dropColumn(['for_sale', 'release_date', 'reissue_date', 'sold_date']);
+        Schema::table('records', function (Blueprint $table) use ($hasForSale) {
+            $table->dropColumn(array_merge($hasForSale ? ['for_sale'] : [], ['release_date', 'reissue_date', 'sold_date']));
         });
+    }
 
+    private function createEditions(): void
+    {
         Schema::create('editions', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
