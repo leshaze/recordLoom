@@ -35,7 +35,7 @@
             <div class="col-md-8 col-lg-9">
                 <div class="card mb-3">
                     <div class="card-header">{{ __('Stammdaten & Details') }}</div>
-                    <dl class="card-body row mb-0">
+                    <div class="card-body"><dl class="row mb-0">
                         <dt class="col-sm-3">{{ __('Label') }}</dt>
                         <dd class="col-sm-9"><a href="{{ route('labels.show', $record->label_id) }}">{{ $record->label->name }}</a></dd>
                         <dt class="col-sm-3">{{ __('Katalog-Nr.') }}</dt>
@@ -52,12 +52,12 @@
                         <dd class="col-sm-9">{{ $field($record->release_year) }}</dd>
                         <dt class="col-sm-3">{{ __('Neuauflage') }}</dt>
                         <dd class="col-sm-9">{{ $field($record->reissue_year) }}</dd>
-                    </dl>
+                    </dl></div>
                 </div>
 
                 <div class="card mb-3">
                     <div class="card-header">{{ __('Zustand & Preis') }}</div>
-                    <dl class="card-body row mb-0">
+                    <div class="card-body"><dl class="row mb-0">
                         <dt class="col-sm-3">{{ __('Grading Media') }}</dt>
                         <dd class="col-sm-9">
                             @if ($record->gradingMedia())
@@ -80,20 +80,20 @@
                                 <a href="{{ route('platforms.show', $record->platform) }}">{{ $record->platform->name }}</a>
                             @else – @endif
                         </dd>
-                    </dl>
+                    </dl></div>
                 </div>
 
                 @if ($record->sold)
                     <div class="card mb-3">
                         <div class="card-header">{{ __('Verkauf') }}</div>
-                        <dl class="card-body row mb-0">
+                        <div class="card-body"><dl class="row mb-0">
                             <dt class="col-sm-3">{{ __('Verkaufsdatum') }}</dt>
                             <dd class="col-sm-9">{{ \App\Support\Format::date($record->sold_on) ?: '–' }}</dd>
                             <dt class="col-sm-3">{{ __('Verkauft an') }}</dt>
                             <dd class="col-sm-9">{{ $field($record->sold_to) }}</dd>
                             <dt class="col-sm-3">{{ __('Verkaufspreis') }}</dt>
                             <dd class="col-sm-9">{{ \App\Support\Format::euro($record->sold_price) ?: '–' }}</dd>
-                        </dl>
+                        </dl></div>
                     </div>
                 @endif
 
@@ -107,7 +107,7 @@
                 @if ($prices->count() >= 2)
                     <div class="card mb-3">
                         <div class="card-header">{{ __('Preisentwicklung') }}</div>
-                        <div class="card-body row">
+                        <div class="card-body"><div class="row mb-0">
                             <div class="col-md-5 small">
                                 @foreach ($prices as $price)
                                     {{ \App\Support\Format::date($price->created_at) }} – {{ \App\Support\Format::euro($price->price) }}
@@ -120,7 +120,7 @@
                             <div class="col-md-7">
                                 <canvas id="priceChart"></canvas>
                             </div>
-                        </div>
+                        </div></div>
                     </div>
                 @endif
             </div>

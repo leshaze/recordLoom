@@ -165,10 +165,10 @@
                 <div class="list-group">
                     @foreach ($records as $record)
                         <a href="{{ route('records.show', $record) }}" @class(['list-group-item list-group-item-action d-flex gap-3 align-items-center', 'opacity-50' => $record->sold || $record->lost])>
-                            <x-cover :record="$record" :size="56" />
-                            <div class="flex-grow-1 min-w-0">
-                                <div class="fw-semibold text-truncate">{{ $record->title }}</div>
-                                <div class="small text-body-secondary text-truncate">{{ $record->artist->name }} · {{ $record->kind }}@if ($record->release_year) · {{ $record->release_year }}@endif</div>
+                            <x-cover :record="$record" :size="56" class="flex-shrink-0" />
+                            <div class="flex-grow-1" style="min-width: 0;">
+                                <div class="fw-semibold text-break">{{ $record->title }}</div>
+                                <div class="small text-body-secondary text-break">{{ $record->artist->name }} · {{ $record->kind }}@if ($record->release_year) · {{ $record->release_year }}@endif</div>
                                 <div class="small">
                                     <x-grading-badge :grading="$record->gradingMedia()" />
                                     @if ($record->sold) <span class="badge text-bg-secondary">{{ __('Verkauft') }}</span>

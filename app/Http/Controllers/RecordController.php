@@ -115,7 +115,7 @@ class RecordController extends Controller
     {
         $current = Carbon::now()->format('d.m.Y');
 
-        $records = $this->sellingQuery()->with(['artist', 'country'])->get();
+        $records = $this->sellingQuery()->with(['artist', 'country', 'editions'])->get();
 
         $pdf = Pdf::loadView('records.print', ['records' => $records]);
 

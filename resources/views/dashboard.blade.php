@@ -40,7 +40,7 @@
                 <div class="list-group list-group-flush">
                     @foreach ($latest as $record)
                         <a href="{{ route('records.show', $record) }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
-                            <x-cover :record="$record" :size="40" />
+                            <x-cover :record="$record" :size="40" class="flex-shrink-0" />
                             <div class="flex-grow-1">
                                 <div class="fw-semibold">{{ $record->title }}</div>
                                 <div class="small text-body-secondary">{{ $record->artist->name }} · {{ $record->kind }}@if ($record->release_year) · {{ $record->release_year }}@endif</div>

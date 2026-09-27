@@ -137,3 +137,25 @@ test('csv import finds zusatzinfos by their english name', function () {
     expect($record->editions->pluck('name')->all())->toBe(['Erstpressung'])
         ->and(Edition::where('name', 'First pressing')->exists())->toBeFalse();
 });
+
+test('plural texts stay german in german', function () {
+    languageRecord();
+
+    // trans_choice() falls back to English when a German key is missing in de.json.
+    $this->withHeader('Accept-Language', 'de')->get(route('records.index'))->assertSee('1 Eintrag')->assertDontSee('1 entry');
+    $this->withHeader('Accept-Language', 'en')->get(route('records.index'))->assertSee('1 entry');
+
+    $german = json_decode(file_get_contents(lang_path('de.json')), true);
+    $files = array_merge(glob(resource_path('views/*/*.blade.php')), glob(app_path('Http/Controllers/*.php')));
+    $missing = [];
+    foreach ($files as $file) {
+        preg_match_all("/trans_choice\(\s*'((?:[^'\\\\]|\\\\.)*)'/", file_get_contents($file), $matches);
+        foreach ($matches[1] as $key) {
+            if (! isset($german[$key])) {
+                $missing[] = basename($file).': '.$key;
+            }
+        }
+    }
+
+    expect($missing)->toBe([]);
+});

@@ -77,7 +77,7 @@ class ArtistController extends Controller
     {
         $current = Carbon::now()->format('d.m.Y');
 
-        $records = $artist->records()->with(['label', 'country'])
+        $records = $artist->records()->with(['label', 'country', 'editions'])
             ->orderBy('title', 'ASC')
             ->get();
 

@@ -10,7 +10,7 @@
 
 <div class="card mb-3">
     <div class="card-header">{{ __('Stammdaten') }}</div>
-    <div class="card-body row g-3">
+    <div class="card-body"><div class="row g-3 mb-0">
         <div class="col-12">
             <span class="form-label d-block">{{ __('Art') }} <span class="text-danger">*</span></span>
             @foreach (['LP', 'CD'] as $kind)
@@ -60,12 +60,12 @@
             @endforelse
             @error('editions.*') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
-    </div>
+    </div></div>
 </div>
 
 <div class="card mb-3">
     <div class="card-header">{{ __('Details') }}</div>
-    <div class="card-body row g-3">
+    <div class="card-body"><div class="row g-3 mb-0">
         @foreach (['catalog_number' => 'Katalog-Nr.', 'matrix_number' => 'Matrix-Nr.', 'barcode' => 'Barcode', 'archive_number' => 'Archiv-Nr.'] as $field => $label)
             <div class="col-sm-6 col-md-3">
                 <label for="{{ $field }}" class="form-label">{{ __($label) }}</label>
@@ -93,12 +93,12 @@
                 class="form-control @error('reissue_year') is-invalid @enderror" value="{{ $value('reissue_year') }}">
             @error('reissue_year') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
-    </div>
+    </div></div>
 </div>
 
 <div class="card mb-3">
     <div class="card-header">{{ __('Zustand & Preis') }}</div>
-    <div class="card-body row g-3">
+    <div class="card-body"><div class="row g-3 mb-0">
         @foreach (['grading_media' => 'Grading Media', 'grading_cover' => 'Grading Cover'] as $field => $label)
             <div class="col-sm-6 col-md-3">
                 <label for="{{ $field }}" class="form-label">{{ __($label) }}</label>
@@ -135,7 +135,7 @@
                 value="{{ old('platform', $record->platform?->name) }}">
             <input type="hidden" name="platform_id" id="platform_id" value="{{ old('platform_id', $record->platform_id) }}">
         </div>
-    </div>
+    </div></div>
 </div>
 
 <div class="card mb-3">
@@ -163,7 +163,7 @@
 
 <div class="card mb-3">
     <div class="card-header">{{ __('Verkauf') }}</div>
-    <div class="card-body row g-3">
+    <div class="card-body"><div class="row g-3 mb-0">
         <div class="col-12">
             <div class="form-check form-check-inline">
                 <input class="form-check-input" type="checkbox" id="selling" name="selling" value="1" @checked(old('selling', $record->selling))>
@@ -203,7 +203,7 @@
                 </div>
             </div>
         @endunless
-    </div>
+    </div></div>
 </div>
 
 <div class="card mb-3">

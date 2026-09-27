@@ -79,7 +79,7 @@ class LabelController extends Controller
 
         $records = $label->records()
             ->select('records.*')
-            ->with(['artist', 'country'])
+            ->with(['artist', 'country', 'editions'])
             ->join('artists', 'records.artist_id', '=', 'artists.id')
             ->orderBy('artists.name', 'ASC')
             ->orderBy('records.title', 'ASC')

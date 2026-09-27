@@ -8,3 +8,11 @@
 @import 'bootstrap/scss/bootstrap';
 @import 'bootstrap-icons/font/bootstrap-icons.css';
 @import 'jquery-ui/themes/base/all.css';
+
+// Long titles, names or numbers (e.g. matrix numbers) must never break out of their box.
+h1,
+.card-body,
+.list-group-item,
+.toast-body {
+    overflow-wrap: anywhere;
+}
