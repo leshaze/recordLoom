@@ -6,6 +6,7 @@ use App\Models\Label;
 use App\Models\PriceHistory;
 use App\Models\Record;
 use App\Services\Discogs\DiscogsClient;
+use App\Support\CatchUpSchedule;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -329,4 +330,31 @@ test('the record form offers the barcode scanner', function () {
         ->assertSee('data-barcode-scan="discogs"', false)
         ->assertSee('capture="environment"', false)
         ->assertSee('Barcode scannen');
+});
+
+test('the market data update catches up missed days', function () {
+    fakeDiscogs();
+    $record = discogsRecord(['discogs_release_id' => 1234, 'selling' => true]);
+    $this->travelTo(now()->startOfDay());
+
+    $this->artisan('discogs:update-prices --if-due')->assertSuccessful();
+    $first = $record->fresh()->discogs_prices_updated_at;
+
+    $this->travel(2)->hours();
+    $this->artisan('discogs:update-prices --if-due');
+    expect($record->fresh()->discogs_prices_updated_at->equalTo($first))->toBeTrue();
+
+    // Server was off for three days: runs as soon as the scheduler runs again.
+    $this->travel(3)->days();
+    $this->artisan('discogs:update-prices --if-due');
+    expect($record->fresh()->discogs_prices_updated_at->greaterThan($first))->toBeTrue();
+});
+
+test('a last run in the future (wrong clock) counts as due', function () {
+    $schedule = app(CatchUpSchedule::class);
+    $this->travelTo(now()->addYear());
+    $schedule->markRun('test');
+    $this->travelBack();
+
+    expect($schedule->isDue('test', '7 days'))->toBeTrue();
 });

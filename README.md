@@ -25,7 +25,8 @@ RecordLoom can take over data, covers and prices from [Discogs](https://www.disc
 - **Prices:** the record page shows the lowest offer and the range of the price suggestions (depending on the
   condition) with the suggestion for the grading of the record. Both can be used as current price, they are stored
   in the price history with the vendor "Discogs". The highest offer and sale prices are not available in the API.
-  Records marked for sale are updated every night (`php artisan discogs:update-prices`, `--all` for all linked records).
+  Records marked for sale are updated once a day, missed days are caught up (`php artisan discogs:update-prices`,
+  `--all` for all linked records).
 - **Matching:** *Platten → Mit Discogs abgleichen* suggests releases for existing records. Before linking a
   comparison shows the existing and the Discogs value of every field; existing values are kept unless chosen
   otherwise. The search in the record form asks the same way when fields differ.
@@ -41,8 +42,13 @@ Discogs allows 60 requests per minute; search results and releases are cached.
 
 ### Weekly backup by mail
 
-Once a week (Sunday 04:23) RecordLoom mails a compressed copy of the SQLite database, but only if the collection
-has changed since the last backup (sessions and cache do not count). Cover images are not included.
+Every 7 days RecordLoom mails a compressed copy of the SQLite database, but only if the collection has changed
+since the last backup (sessions and cache do not count). Cover images are not included.
+
+The server does not have to run all the time (e.g. a Raspberry Pi): the scheduler checks every 15 minutes whether
+the last check is 7 days ago, so a backup that was missed while the server was off is caught up at most 15 minutes
+after it is running again. The Discogs market data works the same way with 24 hours
+(`BACKUP_INTERVAL_DAYS`, `DISCOGS_PRICE_INTERVAL_HOURS`).
 
 1. Configure sending mails in the `.env` (`MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
    `MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM_ADDRESS`) and set the recipient: `BACKUP_MAIL_TO=you@example.com`
