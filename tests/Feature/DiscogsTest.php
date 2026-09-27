@@ -200,7 +200,8 @@ test('market data can be loaded and both prices can be used', function () {
 
     $history = PriceHistory::where('record_id', $record->id)->orderBy('id')->get();
     expect($history->pluck('price')->all())->toBe(['21.46', '18.50'])
-        ->and($history->last()->platform->name)->toBe('Discogs');
+        ->and($history->last()->platform->name)->toBe('Discogs')
+        ->and($record->fresh()->platform->name)->toBe('Discogs');
 
     $this->get(route('records.show', $record))->assertSee('Preisentwicklung');
 });
