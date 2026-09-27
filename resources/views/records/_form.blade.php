@@ -22,6 +22,9 @@
         'cover' => __('Cover'),
         'editions' => __('Zusatzinfos'),
         'fields' => collect(\App\Services\Discogs\DiscogsComparison::FIELDS)->map(fn ($label) => __($label)),
+        'scanNotFound' => __('Kein Barcode erkannt. Bitte näher heran, gerade halten und auf gutes Licht achten.'),
+        'scanNoCamera' => __('Die Kamera konnte nicht gestartet werden. Bitte den Zugriff auf die Kamera erlauben oder ein Foto aufnehmen.'),
+        'scanReading' => __('Lese Barcode aus dem Foto …'),
     ]) }}">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span><i class="bi bi-vinyl"></i> Discogs</span>
@@ -33,6 +36,8 @@
         @if ($discogsConfigured)
             <label for="discogs-query" class="form-label">{{ __('Bei Discogs suchen und Angaben übernehmen') }}</label>
             <div class="input-group">
+                <button type="button" class="btn btn-outline-secondary" id="barcode-scan" title="{{ __('Barcode mit der Kamera scannen') }}"
+                    aria-label="{{ __('Barcode mit der Kamera scannen') }}"><i class="bi bi-upc-scan"></i><span class="d-none d-sm-inline"> {{ __('Scannen') }}</span></button>
                 <input type="search" id="discogs-query" class="form-control" autocomplete="off"
                     placeholder="{{ __('Barcode, Katalog-Nr. oder Künstler und Titel') }}">
                 <button type="button" class="btn btn-outline-info" id="discogs-search"><i class="bi bi-search"></i> {{ __('Suchen') }}</button>
@@ -294,5 +299,33 @@
     <div class="card-body">
         <textarea class="form-control @error('note') is-invalid @enderror" name="note" id="note" rows="4" maxlength="5000">{{ $value('note') }}</textarea>
         @error('note') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+</div>
+
+<div class="modal fade" id="barcode-modal" tabindex="-1" aria-labelledby="barcode-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="barcode-modal-title"><i class="bi bi-upc-scan"></i> {{ __('Barcode scannen') }}</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Schließen') }}"></button>
+            </div>
+            <div class="modal-body">
+                <div class="position-relative bg-black rounded overflow-hidden" style="aspect-ratio: 4 / 3;">
+                    <video id="barcode-video" class="w-100 h-100 object-fit-cover" muted playsinline></video>
+                    {{-- Aiming frame --}}
+                    <div class="position-absolute top-50 start-50 translate-middle border border-2 border-info rounded"
+                        style="width: 80%; height: 35%; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .35);"></div>
+                </div>
+                <p class="small text-body-secondary mt-2 mb-0" id="barcode-hint">{{ __('Halte den Barcode in den Rahmen. Er wird automatisch erkannt.') }}</p>
+                <p class="small text-danger mt-2 mb-0 d-none" id="barcode-error"></p>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <label class="btn btn-outline-secondary mb-0">
+                    <i class="bi bi-camera"></i> {{ __('Foto aufnehmen') }}
+                    <input type="file" id="barcode-photo" accept="image/*" capture="environment" class="d-none">
+                </label>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Abbrechen') }}</button>
+            </div>
+        </div>
     </div>
 </div>

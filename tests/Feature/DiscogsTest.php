@@ -323,3 +323,10 @@ test('the discogs id is part of the csv export', function () {
 
     expect($this->get(route('records.export'))->streamedContent())->toContain('Discogs-ID')->toContain(';1234');
 });
+
+test('the record form offers the barcode scanner', function () {
+    $this->get(route('records.create'))
+        ->assertSee('id="barcode-scan"', false)
+        ->assertSee('capture="environment"', false)
+        ->assertSee('Barcode scannen');
+});

@@ -1,4 +1,5 @@
 import { Modal } from 'bootstrap';
+import { canScanLive, scanImageFile, startScanner } from './barcode-scanner';
 
 // Discogs search in the record form: search releases, pick one and fill in the form.
 // All texts from Discogs are inserted with textContent, never as HTML.
@@ -260,6 +261,10 @@ export function initDiscogs() {
     }
 
     button.addEventListener('click', search);
+    initBarcodeScanner(texts, code => {
+        query.value = code;
+        search();
+    });
     query.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -325,5 +330,71 @@ export function initDiscogsReview() {
             document.querySelectorAll('#discogs-review input[type=radio][value="' + button.dataset.chooseAll + '"]')
                 .forEach(radio => { radio.checked = true; });
         });
+    });
+}
+
+// Barcode button in the Discogs search: live camera in a dialog, a photo as fallback.
+function initBarcodeScanner(texts, onCode) {
+    const button = document.getElementById('barcode-scan');
+    const modalElement = document.getElementById('barcode-modal');
+    if (!button || !modalElement) return;
+
+    const modal = Modal.getOrCreateInstance(modalElement);
+    const video = document.getElementById('barcode-video');
+    const photo = document.getElementById('barcode-photo');
+    const error = document.getElementById('barcode-error');
+    const status = document.getElementById('discogs-status');
+    let controls = null;
+
+    const showError = text => {
+        error.textContent = text;
+        error.classList.toggle('d-none', !text);
+    };
+
+    const stop = () => {
+        controls?.stop();
+        controls = null;
+    };
+
+    const found = code => {
+        navigator.vibrate?.(80);
+        stop();
+        modal.hide();
+        onCode(code);
+    };
+
+    button.addEventListener('click', () => {
+        showError('');
+        if (!canScanLive()) {
+            // No live camera (e.g. plain http): take a photo with the camera app instead.
+            photo.click();
+            return;
+        }
+        modal.show();
+    });
+
+    modalElement.addEventListener('shown.bs.modal', async () => {
+        try {
+            controls = await startScanner(video, found);
+        } catch {
+            showError(texts.scanNoCamera);
+        }
+    });
+    modalElement.addEventListener('hidden.bs.modal', stop);
+
+    photo.addEventListener('change', async () => {
+        const file = photo.files[0];
+        photo.value = '';
+        if (!file) return;
+        stop();
+        modal.hide();
+        status.textContent = texts.scanReading;
+        const code = await scanImageFile(file);
+        if (code) {
+            found(code);
+        } else {
+            status.textContent = texts.scanNotFound;
+            status.className = 'small mt-2 text-danger';
+        }
     });
 }
