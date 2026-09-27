@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArtistController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DiscogsController;
 use App\Http\Controllers\EditionController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\PlatformController;
@@ -40,6 +41,19 @@ Route::get('/records/api', [SearchController::class, 'getAutocomplete'])
     ->name('autocomplete');
 Route::get('/artists/{artist}/print', [ArtistController::class, 'print'])->name('artists.print');
 Route::get('/labels/{label}/print', [LabelController::class, 'print'])->name('labels.print');
+
+// Discogs: search and release data for the record form, market data and matching of existing records.
+Route::middleware('throttle:40,1')->prefix('discogs')->name('discogs.')->group(function () {
+    Route::get('/search', [DiscogsController::class, 'search'])->name('search');
+    Route::get('/releases/{release}', [DiscogsController::class, 'release'])->whereNumber('release')->name('release');
+    Route::get('/records/{record}/suggestions', [DiscogsController::class, 'suggestions'])->name('suggestions');
+    Route::post('/records/{record}/prices', [DiscogsController::class, 'updatePrices'])->name('prices');
+    Route::post('/records/{record}/apply-price', [DiscogsController::class, 'applyPrice'])->name('apply-price');
+    Route::post('/records/{record}/link', [DiscogsController::class, 'link'])->name('link');
+    Route::post('/records/{record}/ignore', [DiscogsController::class, 'ignore'])->name('ignore');
+    Route::delete('/records/{record}/link', [DiscogsController::class, 'unlink'])->name('unlink');
+});
+Route::get('/discogs/match', [DiscogsController::class, 'match'])->name('discogs.match');
 
 Route::resource('editions', EditionController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::resource('artists', ArtistController::class);

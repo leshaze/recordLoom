@@ -28,6 +28,7 @@ class StoreRecordRequest extends FormRequest
             'reissue_year' => __('Jahr der Neuauflage'),
             'sold_on' => __('Verkaufsdatum'),
             'cover' => __('Cover'),
+            'discogs_release_id' => __('Discogs-Release-ID'),
         ];
     }
 
@@ -78,6 +79,8 @@ class StoreRecordRequest extends FormRequest
             'editions' => ['nullable', 'array'],
             'editions.*' => ['integer', 'exists:editions,id'],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:8192'],
+            'discogs_release_id' => ['nullable', 'integer', 'min:1'],
+            'discogs_cover_url' => ['nullable', 'url:https', 'max:500'],
         ];
     }
 }

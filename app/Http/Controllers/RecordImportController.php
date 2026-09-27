@@ -27,7 +27,7 @@ class RecordImportController extends Controller
         $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:10240']], [], ['file' => __('Datei')]);
 
         $rules = collect((new StoreRecordRequest)->rules())
-            ->except(['cover', 'editions', 'editions.*', 'artist_id', 'label_id', 'country_id', 'platform_id'])
+            ->except(['cover', 'editions', 'editions.*', 'artist_id', 'label_id', 'country_id', 'platform_id', 'discogs_cover_url'])
             ->merge([
                 'sold_on' => ['nullable', 'date'],
                 'sold_to' => ['nullable', 'string', 'max:255'],

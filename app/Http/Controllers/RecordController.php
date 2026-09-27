@@ -9,12 +9,15 @@ use App\Models\Country;
 use App\Models\Edition;
 use App\Models\Label;
 use App\Models\Record;
+use App\Services\Discogs\DiscogsClient;
+use App\Services\Discogs\DiscogsCovers;
 use App\Support\CoverStorage;
 use App\Support\RecordCsv;
 use App\Support\RecordFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 
 class RecordController extends Controller
@@ -51,16 +54,18 @@ class RecordController extends Controller
 
     public function create()
     {
-        return view('records.create', ['record' => new Record, 'editions' => Edition::orderBy('name')->get()]);
+        return view('records.create', ['record' => new Record, 'editions' => Edition::orderBy('name')->get(), 'discogsConfigured' => app(DiscogsClient::class)->isConfigured()]);
     }
 
-    public function store(StoreRecordRequest $request, SaveRecord $saveRecord)
+    public function store(StoreRecordRequest $request, SaveRecord $saveRecord, DiscogsCovers $covers)
     {
         $data = [...$request->validated(), 'selling' => $request->boolean('selling')];
         $record = $saveRecord(new Record, $data, $request->file('cover'));
+        $warning = $this->coverFromDiscogs($request, $record, $covers);
 
         return redirect()->route('records.show', $record)
-            ->with('info', __('Platte „:title“ von :artist wurde angelegt.', ['title' => $record->title, 'artist' => $record->artist->name]));
+            ->with('info', __('Platte „:title“ von :artist wurde angelegt.', ['title' => $record->title, 'artist' => $record->artist->name]))
+            ->with('warning', $warning);
     }
 
     public function show(Record $record)
@@ -73,10 +78,10 @@ class RecordController extends Controller
 
     public function edit(Record $record)
     {
-        return view('records.edit', ['record' => $record, 'editions' => Edition::orderBy('name')->get()]);
+        return view('records.edit', ['record' => $record, 'editions' => Edition::orderBy('name')->get(), 'discogsConfigured' => app(DiscogsClient::class)->isConfigured()]);
     }
 
-    public function update(UpdateRecordRequest $request, Record $record, SaveRecord $saveRecord)
+    public function update(UpdateRecordRequest $request, Record $record, SaveRecord $saveRecord, DiscogsCovers $covers)
     {
         $data = [
             ...$request->validated(),
@@ -85,9 +90,11 @@ class RecordController extends Controller
             'lost' => $request->boolean('lost'),
         ];
         $saveRecord($record, $data, $request->file('cover'), $request->boolean('remove_cover'));
+        $warning = $this->coverFromDiscogs($request, $record, $covers);
 
         return redirect()->route('records.show', $record)
-            ->with('info', __('Platte „:title“ von :artist wurde gespeichert.', ['title' => $record->title, 'artist' => $record->artist->name]));
+            ->with('info', __('Platte „:title“ von :artist wurde gespeichert.', ['title' => $record->title, 'artist' => $record->artist->name]))
+            ->with('warning', $warning);
     }
 
     public function destroy(Record $record)
@@ -130,6 +137,22 @@ class RecordController extends Controller
         $query = (new RecordFilter($request))->query()->with(['artist', 'label', 'country', 'platform', 'editions']);
 
         return RecordCsv::download($query, 'recordloom-'.Carbon::now()->format('Y-m-d').'.csv');
+    }
+
+    /**
+     * Cover chosen in the Discogs search, used when no own cover was uploaded.
+     */
+    private function coverFromDiscogs(FormRequest $request, Record $record, DiscogsCovers $covers): ?string
+    {
+        $url = $request->validated('discogs_cover_url');
+        if (! $url || $request->hasFile('cover')) {
+            return null;
+        }
+
+        $warning = $covers->store($record, $url);
+        $record->save();
+
+        return $warning;
     }
 
     /**

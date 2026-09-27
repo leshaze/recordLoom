@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'discogs' => [
+        // Personal access token: discogs.com → Settings → Developers → Generate new token
+        'token' => env('DISCOGS_TOKEN'),
+        'user_agent' => env('DISCOGS_USER_AGENT', 'RecordLoom/1.0 +https://github.com/leshaze/recordLoom'),
+        'base_url' => env('DISCOGS_BASE_URL', 'https://api.discogs.com'),
+        // Update the market data of records marked for sale every night
+        'nightly_prices' => env('DISCOGS_NIGHTLY_PRICES', true),
+    ],
+
 ];

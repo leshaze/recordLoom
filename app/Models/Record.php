@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Discogs\ReleaseMapper;
 use App\Support\Grading;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -19,6 +20,12 @@ class Record extends Model
             'reissue_year' => 'integer',
             'grading_media' => 'integer',
             'grading_cover' => 'integer',
+            'discogs_release_id' => 'integer',
+            'discogs_price_suggestions' => 'array',
+            'discogs_lowest_price' => 'decimal:2',
+            'discogs_num_for_sale' => 'integer',
+            'discogs_prices_updated_at' => 'datetime',
+            'discogs_ignored_at' => 'datetime',
         ];
     }
 
@@ -50,6 +57,31 @@ class Record extends Model
     public function editions(): BelongsToMany
     {
         return $this->belongsToMany(Edition::class)->orderBy('name');
+    }
+
+    public function discogsUrl(): ?string
+    {
+        return $this->discogs_release_id ? ReleaseMapper::releaseUrl($this->discogs_release_id) : null;
+    }
+
+    /**
+     * Discogs condition matching the media grading, e.g. "Very Good Plus (VG+)".
+     */
+    public function discogsCondition(): ?string
+    {
+        return ReleaseMapper::CONDITIONS[$this->grading_media] ?? null;
+    }
+
+    /**
+     * Discogs price suggestion for the condition of this record.
+     *
+     * @return array{currency: string, value: float}|null
+     */
+    public function discogsSuggestedPrice(): ?array
+    {
+        $condition = $this->discogsCondition();
+
+        return $condition ? ($this->discogs_price_suggestions[$condition] ?? null) : null;
     }
 
     public function hasCover(): bool
