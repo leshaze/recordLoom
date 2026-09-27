@@ -175,34 +175,60 @@ test('covers are only downloaded from discogs', function () {
     Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'evil.example'));
 });
 
-test('market data can be loaded and the suggestion used as price', function () {
+test('market data can be loaded and both prices can be used', function () {
     fakeDiscogs();
     $record = discogsRecord(['discogs_release_id' => 1234, 'grading_media' => 70]);
 
-    $this->post(route('discogs.prices', $record))->assertSessionHas('info');
+    $this->post(route('discogs.prices', $record))->assertSessionHas('info')->assertSessionMissing('warning');
     $record->refresh();
     expect($record->discogs_lowest_price)->toBe('18.50')
         ->and($record->discogs_num_for_sale)->toBe(7)
-        ->and($record->discogsSuggestedPrice()['value'])->toBe(21.456);
+        ->and($record->discogsSuggestedPrice()['value'])->toBe(21.456)
+        ->and($record->discogs_suggestions_note)->toBeNull();
 
-    $this->get(route('records.show', $record))->assertSee('21,46 €')->assertSee('18,50 €')->assertSee('7 Angebote');
+    $this->get(route('records.show', $record))
+        ->assertSee('18,50 €')->assertSee('7 Angebote')
+        ->assertSee('12,00 € – 30,00 €')
+        ->assertSee('21,46 €');
 
-    $this->post(route('discogs.apply-price', $record))->assertSessionHas('info');
-    $record->refresh();
-    expect($record->current_price)->toBe('21.46');
-    $history = PriceHistory::where('record_id', $record->id)->latest('id')->first();
-    expect($history->price)->toBe('21.46')->and($history->platform->name)->toBe('Discogs');
+    $this->post(route('discogs.apply-price', $record), ['source' => 'suggestion'])->assertSessionHas('info');
+    expect($record->fresh()->current_price)->toBe('21.46');
+
+    $this->post(route('discogs.apply-price', $record), ['source' => 'lowest'])->assertSessionHas('info');
+    expect($record->fresh()->current_price)->toBe('18.50');
+
+    $history = PriceHistory::where('record_id', $record->id)->orderBy('id')->get();
+    expect($history->pluck('price')->all())->toBe(['21.46', '18.50'])
+        ->and($history->last()->platform->name)->toBe('Discogs');
+
+    $this->get(route('records.show', $record))->assertSee('Preisentwicklung');
 });
 
-test('market statistics are stored even without seller settings', function () {
-    fakeDiscogs(['api.discogs.com/marketplace/price_suggestions/*' => Http::response(['message' => 'You must fill out your seller settings first.'], 403)]);
+test('missing price suggestions are explained instead of reported as error', function () {
+    fakeDiscogs(['api.discogs.com/marketplace/price_suggestions/*' => Http::response(['message' => 'The requested resource was not found.'], 404)]);
     $record = discogsRecord(['discogs_release_id' => 1234, 'grading_media' => 70]);
 
     $this->post(route('discogs.prices', $record))
-        ->assertSessionHas('warning', 'Für Preisvorschläge müssen im Discogs-Konto die Verkäufer-Einstellungen ausgefüllt sein.');
+        ->assertSessionHas('info')
+        ->assertSessionMissing('warning')
+        ->assertSessionMissing('error');
 
-    expect($record->fresh()->discogs_num_for_sale)->toBe(7);
-    $this->post(route('discogs.apply-price', $record))->assertSessionHas('error');
+    $record->refresh();
+    expect($record->discogs_num_for_sale)->toBe(7)
+        ->and($record->discogs_suggestions_note)->toContain('Verkäufer-Einstellungen');
+
+    $this->get(route('records.show', $record))->assertSee('Verkäufer-Einstellungen');
+    $this->post(route('discogs.apply-price', $record), ['source' => 'suggestion'])->assertSessionHas('error');
+    $this->post(route('discogs.apply-price', $record), ['source' => 'lowest'])->assertSessionHas('info');
+});
+
+test('the lowest offer can not be used when nothing is offered', function () {
+    fakeDiscogs(['api.discogs.com/marketplace/stats/*' => Http::response(['lowest_price' => null, 'num_for_sale' => 0])]);
+    $record = discogsRecord(['discogs_release_id' => 1234]);
+
+    $this->post(route('discogs.prices', $record));
+    $this->get(route('records.show', $record))->assertSee('Zurzeit keine Angebote.');
+    $this->post(route('discogs.apply-price', $record), ['source' => 'lowest'])->assertSessionHas('error');
 });
 
 test('changing the release clears the market data', function () {
@@ -216,29 +242,53 @@ test('changing the release clears the market data', function () {
     expect($record->discogs_release_id)->toBe(555)->and($record->discogs_lowest_price)->toBeNull();
 });
 
-test('existing records can be matched without overwriting data', function () {
+test('existing records are compared before linking', function () {
     fakeDiscogs();
-    $record = discogsRecord(['barcode' => '5099996602319', 'catalog_number' => 'EIGENE-NR']);
-    $linked = discogsRecord(['title' => 'Schon verknüpft', 'discogs_release_id' => 1]);
+    $record = discogsRecord(['barcode' => '5099996602319', 'catalog_number' => 'EIGENE-NR', 'release_year' => 1990]);
 
-    $this->get(route('discogs.match'))->assertOk()->assertSee('Computer World')->assertDontSee('Schon verknüpft');
-
+    $this->get(route('discogs.match'))->assertOk()->assertSee(route('discogs.review', $record), false);
     $this->getJson(route('discogs.suggestions', $record))->assertJsonPath('results.0.id', 1234);
-    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'barcode=5099996602319'));
 
-    $this->post(route('discogs.link', $record), ['release_id' => 1234, 'fill_missing' => 1])->assertSessionHas('info');
+    $this->get(route('discogs.review', ['record' => $record, 'release_id' => 1234]))
+        ->assertOk()
+        ->assertSee('EIGENE-NR')->assertSee('50999 9 66023 1 9')
+        ->assertSee('1990')->assertSee('1981')
+        ->assertSee('Limitierte Auflage');
+
+    // Keep the own catalog number, take the year from Discogs, fill empty fields, add one edition and the cover.
+    $limited = Edition::firstWhere('name', 'Limitierte Auflage');
+    $this->post(route('discogs.link', $record), [
+        'release_id' => 1234,
+        'use' => ['catalog_number' => 'keep', 'release_year' => 'discogs', 'matrix_number' => 'discogs', 'country_name' => 'discogs', 'title' => 'keep'],
+        'editions' => [$limited->id],
+        'cover' => 'discogs',
+    ])->assertRedirect(route('discogs.match'))->assertSessionHas('info');
 
     $record->refresh();
     expect($record->discogs_release_id)->toBe(1234)
         ->and($record->catalog_number)->toBe('EIGENE-NR')
+        ->and($record->release_year)->toBe(1981)
         ->and($record->matrix_number)->toBe('KW 4-A / KW 4-B')
-        ->and($record->reissue_year)->toBe(2009)
         ->and($record->country->name)->toBe('Germany')
-        ->and($record->cover_path)->not->toBeNull()
-        ->and($record->editions()->count())->toBe(2)
-        ->and($record->title)->toBe('Computer World');
+        ->and($record->reissue_year)->toBeNull()
+        ->and($record->editions->pluck('name')->all())->toBe(['Limitierte Auflage'])
+        ->and($record->cover_path)->not->toBeNull();
 
-    $this->get(route('discogs.match'))->assertDontSee(route('discogs.suggestions', $record));
+    $this->get(route('discogs.match'))->assertDontSee(route('discogs.review', $record), false);
+});
+
+test('without choices nothing is overwritten', function () {
+    fakeDiscogs();
+    $record = discogsRecord(['title' => 'Mein Titel', 'catalog_number' => 'EIGENE-NR']);
+
+    $this->post(route('discogs.link', $record), ['release_id' => 1234])->assertSessionHas('info');
+
+    $record->refresh();
+    expect($record->title)->toBe('Mein Titel')
+        ->and($record->catalog_number)->toBe('EIGENE-NR')
+        ->and($record->barcode)->toBeNull()
+        ->and($record->cover_path)->toBeNull()
+        ->and($record->discogs_release_id)->toBe(1234);
 });
 
 test('records can be skipped and unlinked', function () {

@@ -169,6 +169,6 @@ class DiscogsClient
             404 => __('Bei Discogs nicht gefunden.'),
             429 => __('Zu viele Anfragen an Discogs. Bitte eine Minute warten.'),
             default => __('Discogs hat mit einem Fehler geantwortet (:status).', ['status' => $response->status()]),
-        });
+        }, $response->status());
     }
 }

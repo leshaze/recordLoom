@@ -18,6 +18,10 @@
         'applied' => __('Angaben von Discogs übernommen. Bitte prüfen und Grading und Preis ergänzen.'),
         'error' => __('Discogs ist gerade nicht erreichbar.'),
         'show' => __('Auf Discogs ansehen'),
+        'empty' => __('leer'),
+        'cover' => __('Cover'),
+        'editions' => __('Zusatzinfos'),
+        'fields' => collect(\App\Services\Discogs\DiscogsComparison::FIELDS)->map(fn ($label) => __($label)),
     ]) }}">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span><i class="bi bi-vinyl"></i> Discogs</span>
@@ -52,6 +56,38 @@
         </div>
         <input type="hidden" name="discogs_cover_url" id="discogs_cover_url" value="{{ old('discogs_cover_url') }}">
         <div class="small text-body-secondary mt-2">{{ __('Daten von') }} <a href="https://www.discogs.com" target="_blank" rel="noopener noreferrer">Discogs</a></div>
+    </div>
+</div>
+
+<div class="modal fade" id="discogs-compare" tabindex="-1" aria-labelledby="discogs-compare-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="discogs-compare-title">{{ __('Welche Angaben sollen gelten?') }}</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Schließen') }}"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-body-secondary">{{ __('Diese Felder sind schon ausgefüllt und weichen von Discogs ab. Vorbelegt ist der vorhandene Wert, leere Felder werden automatisch gefüllt.') }}</p>
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-compare-all="keep">{{ __('Überall vorhandene Werte') }}</button>
+                    <button type="button" class="btn btn-sm btn-outline-info" data-compare-all="discogs">{{ __('Überall Discogs') }}</button>
+                </div>
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 22%;">{{ __('Feld') }}</th>
+                            <th style="width: 39%;">{{ __('Vorhanden') }}</th>
+                            <th style="width: 39%;">Discogs</th>
+                        </tr>
+                    </thead>
+                    <tbody id="discogs-compare-rows"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Abbrechen') }}</button>
+                <button type="button" class="btn btn-primary" id="discogs-compare-apply">{{ __('Übernehmen') }}</button>
+            </div>
+        </div>
     </div>
 </div>
 

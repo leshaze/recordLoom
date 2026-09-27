@@ -22,8 +22,8 @@ Artisan::command('discogs:update-prices {--all : All linked records instead of o
     $failed = 0;
     foreach ($records as $index => $record) {
         try {
-            $warning = $prices->update($record);
-            $this->line($record->title.($warning ? ' – '.$warning : ''));
+            $prices->update($record);
+            $this->line($record->title.($record->discogs_suggestions_note ? ' – '.$record->discogs_suggestions_note : ''));
         } catch (DiscogsException $exception) {
             $failed++;
             $this->warn($record->title.' – '.$exception->getMessage());

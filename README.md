@@ -17,11 +17,13 @@ RecordLoom can take over data, covers and prices from [Discogs](https://www.disc
 - **New record:** search by barcode, catalog number or artist and title, pick the pressing and the form is filled
   in (title, artist, label, numbers, country, year, Zusatzinfos, cover). Grading and prices stay manual.
 - **Link:** every record can store its Discogs release ID; the record page links to Discogs.
-- **Prices:** the record page shows the Discogs price suggestion for the grading of the record and the lowest
-  offer; the suggestion can be used as current price (stored in the price history with vendor "Discogs").
+- **Prices:** the record page shows the lowest offer and the range of the price suggestions (depending on the
+  condition) with the suggestion for the grading of the record. Both can be used as current price, they are stored
+  in the price history with the vendor "Discogs". The highest offer and sale prices are not available in the API.
   Records marked for sale are updated every night (`php artisan discogs:update-prices`, `--all` for all linked records).
-- **Matching:** *Platten → Mit Discogs abgleichen* suggests releases for existing records. Linking only fills in
-  empty fields and a missing cover, nothing is overwritten.
+- **Matching:** *Platten → Mit Discogs abgleichen* suggests releases for existing records. Before linking a
+  comparison shows the existing and the Discogs value of every field; existing values are kept unless chosen
+  otherwise. The search in the record form asks the same way when fields differ.
 
 Setup:
 

@@ -49,6 +49,7 @@ Route::middleware('throttle:40,1')->prefix('discogs')->name('discogs.')->group(f
     Route::get('/records/{record}/suggestions', [DiscogsController::class, 'suggestions'])->name('suggestions');
     Route::post('/records/{record}/prices', [DiscogsController::class, 'updatePrices'])->name('prices');
     Route::post('/records/{record}/apply-price', [DiscogsController::class, 'applyPrice'])->name('apply-price');
+    Route::get('/records/{record}/review', [DiscogsController::class, 'review'])->name('review');
     Route::post('/records/{record}/link', [DiscogsController::class, 'link'])->name('link');
     Route::post('/records/{record}/ignore', [DiscogsController::class, 'ignore'])->name('ignore');
     Route::delete('/records/{record}/link', [DiscogsController::class, 'unlink'])->name('unlink');

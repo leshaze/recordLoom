@@ -98,44 +98,66 @@
                         @else
                             @php
                                 $suggested = $record->discogsSuggestedPrice();
+                                $suggestions = collect($record->discogs_price_suggestions ?? [])->pluck('value')->filter(fn ($value) => $value !== null);
                                 $currency = $record->discogs_currency;
                                 $money = fn ($value) => $value === null ? '–' : (($currency ?? 'EUR') === 'EUR' ? \App\Support\Format::euro($value) : number_format((float) $value, 2).' '.$currency);
                             @endphp
                             @if ($record->discogs_prices_updated_at)
-                                <dl class="row mb-2">
-                                    <dt class="col-sm-4">{{ __('Preisvorschlag') }}</dt>
-                                    <dd class="col-sm-8">
-                                        @if ($suggested)
-                                            <strong>{{ $money($suggested['value']) }}</strong>
-                                            <span class="small text-body-secondary">({{ $record->discogsCondition() }})</span>
-                                        @elseif (! $record->grading_media)
-                                            <span class="text-body-secondary">{{ __('Für einen Vorschlag bitte Grading Media setzen.') }}</span>
-                                        @else
-                                            –
-                                        @endif
-                                    </dd>
-                                    <dt class="col-sm-4">{{ __('Günstigstes Angebot') }}</dt>
-                                    <dd class="col-sm-8">{{ $money($record->discogs_lowest_price) }}
-                                        @if ($record->discogs_num_for_sale !== null)
-                                            <span class="small text-body-secondary">({{ trans_choice(':count Angebot|:count Angebote', $record->discogs_num_for_sale) }})</span>
-                                        @endif
-                                    </dd>
-                                    <dt class="col-sm-4">{{ __('Stand') }}</dt>
-                                    <dd class="col-sm-8">{{ \App\Support\Format::date($record->discogs_prices_updated_at) }} {{ $record->discogs_prices_updated_at->format('H:i') }}</dd>
-                                </dl>
-                                @if (is_array($record->discogs_price_suggestions) && count($record->discogs_price_suggestions))
-                                    <details class="small mb-3">
-                                        <summary>{{ __('Alle Preisvorschläge') }}</summary>
-                                        <table class="table table-sm small mt-2 mb-0">
-                                            @foreach ($record->discogs_price_suggestions as $condition => $price)
-                                                <tr @class(['fw-semibold' => $condition === $record->discogsCondition()])>
-                                                    <td>{{ $condition }}</td>
-                                                    <td class="text-end">{{ $money($price['value'] ?? null) }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </table>
-                                    </details>
-                                @endif
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-6">
+                                        <div class="border rounded p-3 h-100">
+                                            <div class="small text-body-secondary">{{ __('Günstigstes Angebot auf Discogs') }}</div>
+                                            @if ($record->discogs_lowest_price !== null)
+                                                <div class="fs-4 fw-semibold">{{ $money($record->discogs_lowest_price) }}</div>
+                                                <div class="small text-body-secondary mb-2">{{ trans_choice(':count Angebot|:count Angebote', (int) $record->discogs_num_for_sale) }}</div>
+                                                <form method="POST" action="{{ route('discogs.apply-price', $record) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="source" value="lowest">
+                                                    <button type="submit" class="btn btn-sm btn-outline-info">{{ __('Als aktuellen Preis übernehmen') }}</button>
+                                                </form>
+                                            @else
+                                                <div class="text-body-secondary">{{ __('Zurzeit keine Angebote.') }}</div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="border rounded p-3 h-100">
+                                            <div class="small text-body-secondary">{{ __('Preisvorschlag von Discogs') }}</div>
+                                            @if ($suggestions->isNotEmpty())
+                                                <div class="fs-4 fw-semibold">{{ $money($suggestions->min()) }} – {{ $money($suggestions->max()) }}</div>
+                                                <div class="small text-body-secondary mb-2">{{ __('je nach Zustand') }}</div>
+                                                @if ($suggested)
+                                                    <div class="mb-2">{{ __('Für deinen Zustand (:condition):', ['condition' => $record->discogsCondition()]) }}
+                                                        <strong>{{ $money($suggested['value']) }}</strong></div>
+                                                    <form method="POST" action="{{ route('discogs.apply-price', $record) }}">
+                                                        @csrf
+                                                        <input type="hidden" name="source" value="suggestion">
+                                                        <button type="submit" class="btn btn-sm btn-outline-info">{{ __('Als aktuellen Preis übernehmen') }}</button>
+                                                    </form>
+                                                @else
+                                                    <div class="small text-body-secondary">{{ __('Setze Grading Media, um den Vorschlag für deinen Zustand zu sehen.') }}</div>
+                                                @endif
+                                                <details class="small mt-2">
+                                                    <summary>{{ __('Alle Preisvorschläge') }}</summary>
+                                                    <table class="table table-sm small mt-2 mb-0">
+                                                        @foreach ($record->discogs_price_suggestions as $condition => $price)
+                                                            <tr @class(['fw-semibold' => $condition === $record->discogsCondition()])>
+                                                                <td>{{ $condition }}</td>
+                                                                <td class="text-end">{{ $money($price['value'] ?? null) }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </table>
+                                                </details>
+                                            @else
+                                                <div class="small text-body-secondary">{{ $record->discogs_suggestions_note ?? __('Discogs hat für diese Pressung keine Preisvorschläge.') }}</div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="small text-body-secondary mb-2">
+                                    {{ __('Stand') }}: {{ \App\Support\Format::date($record->discogs_prices_updated_at) }} {{ $record->discogs_prices_updated_at->format('H:i') }}.
+                                    {{ __('Das teuerste Angebot und Verkaufspreise stellt Discogs über die Schnittstelle nicht bereit. Übernommene Preise erscheinen in der Preisentwicklung mit dem Anbieter „Discogs“.') }}
+                                </p>
                             @else
                                 <p class="text-body-secondary">{{ __('Noch keine Marktdaten geladen.') }}</p>
                             @endif
@@ -144,12 +166,6 @@
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-outline-info"><i class="bi bi-arrow-repeat"></i> {{ __('Marktdaten aktualisieren') }}</button>
                                 </form>
-                                @if ($suggested)
-                                    <form method="POST" action="{{ route('discogs.apply-price', $record) }}">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-info"><i class="bi bi-check2"></i> {{ __('Vorschlag als aktuellen Preis übernehmen') }}</button>
-                                    </form>
-                                @endif
                                 <form method="POST" action="{{ route('discogs.unlink', $record) }}">
                                     @csrf
                                     @method('DELETE')

@@ -1,7 +1,7 @@
 import './bootstrap';
 import 'jquery-ui/dist/jquery-ui';
 import { Toast } from 'bootstrap';
-import { initDiscogs, initDiscogsMatching } from './discogs';
+import { initDiscogs, initDiscogsMatching, initDiscogsReview } from './discogs';
 
 const autocompleteUrl = document.body.dataset.autocompleteUrl;
 
@@ -35,6 +35,7 @@ function autocompleteWithId(input, search, idField) {
 $(function() {
     initDiscogs();
     initDiscogsMatching();
+    initDiscogsReview();
 
     // Messages (session flash) are shown as toasts.
     document.querySelectorAll('.toast').forEach(element => new Toast(element).show());
