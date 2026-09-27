@@ -82,6 +82,7 @@ class DiscogsPrices
         }
 
         $record->current_price = number_format((float) $value, 2, '.', '');
+        $record->platform_id = $platform->id;
         $record->save();
 
         $history = new PriceHistory;
