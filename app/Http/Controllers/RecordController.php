@@ -1,392 +1,145 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\Record;
-use App\Models\Artist;
-use App\Models\Image;
-use App\Models\Label;
-use App\Models\Country;
-use App\Models\Platform;
-use App\Models\PriceHistory;
+
+use App\Actions\SaveRecord;
 use App\Http\Requests\StoreRecordRequest;
 use App\Http\Requests\UpdateRecordRequest;
+use App\Models\Country;
+use App\Models\Edition;
+use App\Models\Label;
+use App\Models\Record;
+use App\Support\CoverStorage;
+use App\Support\RecordCsv;
+use App\Support\RecordFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
-
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class RecordController extends Controller
 {
-    public function index()
+    /**
+     * Relations shown in the record lists.
+     */
+    private const LIST_RELATIONS = ['artist', 'label', 'country', 'editions'];
+
+    public function index(Request $request)
     {
-        //Show all Records from the database and return to view
-        // $records = Record::join('artists', 'records.artist_id', '=', 'artists.id')
-        //     ->select('records.*')
-        //     ->orderBy('artists.name', 'ASC')
-        //     ->paginate(10);
-        $records = Record::paginate(15);
+        $filter = new RecordFilter($request);
+        $records = $filter->query()
+            ->with(self::LIST_RELATIONS)
+            ->paginate($filter->values['per_page'])
+            ->withQueryString();
 
-        //dd($records);
-        return view('records.all', ['records' => $records]);
-
-    }
-
-        public function selling()
-    {
-        //Show all Records from the database and return to view
-        // $records = Record::join('artists', 'records.artist_id', '=', 'artists.id')
-        //     ->select('records.*')
-        //     ->orderBy('artists.name', 'ASC')
-        //     ->paginate(10);
-        $records = Record::orderBy('kind', 'ASC')
-                            ->orderBy('artist_id', 'ASC')
-                            ->where('selling', '=', '1')
-                            ->where('sold', '=', '0')
-                            ->paginate(60);
-
-        //dd($records);
-        return view('records.all', ['records' => $records]);
+        return view('records.all', [
+            'records' => $records,
+            'filter' => $filter,
+            'labels' => Label::orderBy('name')->get(['id', 'name']),
+            'countries' => Country::orderBy('name')->get(['id', 'name']),
+            'editions' => Edition::orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * The old "For Selling" page is now a filter of the record list.
      */
+    public function selling()
+    {
+        return redirect()->route('records.index', ['status' => 'selling']);
+    }
+
     public function create()
     {
-        return view('records.create');
+        return view('records.create', ['record' => new Record, 'editions' => Edition::orderBy('name')->get()]);
     }
 
-        /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \App\Http\Requests\StoreRecordRequest  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(StoreRecordRequest $request)
+    public function store(StoreRecordRequest $request, SaveRecord $saveRecord)
     {
-        $this->validate($request, [
-            'artist_name' => 'required',
-            'title' => 'required',
-            'label_name' => 'required',
-            'image' => 'image|mimes:jpg,png,jpeg,gif,svg|max:2048',
-            'buy_price' => 'nullable|numeric',
-            'current_price' => 'nullable|numeric'
-        ]);
-        //Persist the record in the database
-        //form data is available in the request object
-        $record = new Record();
-        //input method is used to get the value of input with its
-        //name specified
-        $record->kind = $request->input('kind');
+        $data = [...$request->validated(), 'selling' => $request->boolean('selling')];
+        $record = $saveRecord(new Record, $data, $request->file('cover'));
 
-        // Check if artist_id is in the current input request
-        if (empty($request->input('artist_id'))) {
-            // If not, try to get it from the database.
-            $get_artist_id = Artist::firstOrCreate([
-                'name' => $request->input('artist_name')
-            ]);
-            $record->artist_id = $get_artist_id->id;
-        } else {
-            // If an artist_id is proviced in the post request, just use it.
-            $record->artist_id = $request->input('artist_id');
-        }
-
-        $record->title = $request->input('title');
-
-        // Check if label_id is in the current input request
-        if (empty($request->input('label_id'))) {
-            // If not, try to get it from the database.
-            $get_label_id = Label::firstOrCreate([
-                'name' => $request->input('label_name')
-            ]);
-            $record->label_id = $get_label_id->id;
-        } else {
-            // If a label_id is provided in the post request, just use it
-            $record->label_id = $request->input('label_id');
-        }
-
-        $record->catalog_number = $request->input('catalog_number');
-        $record->matrix_number  = $request->input('matrix_number');
-        $record->barcode        = $request->input('barcode');
-
-        // Check if country_name is filled
-        if (!empty($request->input('country_name'))) {
-            // Check if country_id is in the current input request
-            if (empty($request->input('country_id'))) {
-                // If not, try to get it from the database.
-                //dd($request->input());
-                $get_country_id = Country::firstorCreate([
-                    'name' => $request->input('country_name')
-                ]);
-                $record->country_id = $get_country_id->id;
-            } else {
-                $record->country_id = $request->input('country_id');
-            }
-        }
-
-        $record->release_date   = $request->input('release_date');
-        $record->reissue_date   = $request->input('reissue_date');
-        if (is_numeric($request->input('grading_media'))) {
-            $record->grading_media  = $request->input('grading_media');
-        }
-        if (is_numeric($request->input('grading_cover'))) {
-            $record->grading_cover  = $request->input('grading_cover');
-        }
-        if ($request->input('current_price') != NULL) {
-            $checked_currentPrice = str_replace(',', '.', $request->input('current_price'));
-            $record->current_price  = $checked_currentPrice;
-        }
-        if ($request->input('buy_price') != NULL) {
-            $checked_buyPrice = str_replace(',', '.', $request->input('buy_price'));
-            $record->buy_price      = $checked_buyPrice;
-        }
-
-        $record->archive_number = $request->input('archive_number');
-        $record->note           = $request->input('note');
-
-        // Check if platform is filled
-        //dd($request);
-        if (!empty($request->input('platform'))) {
-            // Check if platform_id is in the current input request
-            if (empty($request->input('platform_id'))) {
-                // If not, try to get it from the database.
-                //dd($request->input());
-                $get_platform = Platform::firstorCreate([
-                    'name' => $request->input('platform')
-                ]);
-                //dd($get_platform);
-                $record->platform_id = $get_platform->id;
-            } else {
-                $record->platform_id = $request->input('platform_id');
-            }
-        }
-        $record->save(); //persist the data
-
-/*         //save the image 
-        if ($request->hasFile('file')) {
-            $files = $request->file('file');
-            foreach ($files as $file) {
-                $name = $file->getClientOriginalName();
-                $path = $file->store('images', 'public');
-
-                $image = new Image;
-                $image->reference = 'record';
-                $image->reference_id = $record->id;
-                $image->name = $name;
-                $image->path = $path;
-                $image->save();
-            }; 
-        }*/
-        //Save pricehistory
-        if ($request->input('current_price') != NULL) {
-
-            $pricehistory = new PriceHistory();
-            $pricehistory->price = $checked_currentPrice;
-            $pricehistory->record_id = $record->id;
-            if($record->platform_id) {
-                $pricehistory->platform_id = $record->platform_id;
-            }
-            $pricehistory->save();
-
-            //dd($pricehistory);
-        }
-        return redirect()->route('records.index')->with('info', 'Record ' . $record->title . ' von ' . $record->artist->name . ' added successfully');
+        return redirect()->route('records.show', $record)
+            ->with('info', __('Platte „:title“ von :artist wurde angelegt.', ['title' => $record->title, 'artist' => $record->artist->name]));
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Record  $record
-     * @return \Illuminate\Http\Response
-     */
     public function show(Record $record)
     {
-        //Return view to show record
+        $record->load(['artist', 'label', 'country', 'platform', 'editions']);
+        $prices = $record->prices()->with('platform')->latest()->take(5)->get()->reverse();
 
-        $record = Record::where('id', '=', $record->id)
-            ->first();
-/*         if ($record) {
-            $images = Image::where('reference', '=', 'record')
-                ->where('reference_id', '=', $record->id)
-                ->get();
-        } */
-        $prices = PriceHistory::latest()->take(5)->where('record_id', '=', $record->id)->get();
-        $prices = $prices->reverse();
-
-        if (empty($record)) {
-            return redirect()->route('records.index')->with('error', 'Invalid record');
-        } else {
-            /* return view('records.details', ['record' => $record, 'images' => $images, 'prices' => $prices]); */
-            return view('records.details', ['record' => $record, 'prices' => $prices]);
-        }
+        return view('records.details', ['record' => $record, 'prices' => $prices]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Record  $record
-     * @return \Illuminate\Http\Response
-     */
     public function edit(Record $record)
     {
-        //Find the artist
-        //$record = Record::where('id', '=', $record->id);
-
-/*         $images = Image::where('reference', '=', 'record')
-            ->where('reference_id', '=', $record->id)
-            ->get(); */
-        if (empty($record)) {
-            return redirect()->route('records.index')->with('error', 'Invalid record');
-        } else {
-            /* return view('records.edit', ['record' => $record, 'images' => $images]); */
-            return view('records.edit', ['record' => $record]);
-        }
+        return view('records.edit', ['record' => $record, 'editions' => Edition::orderBy('name')->get()]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \App\Http\Requests\UpdateRecordRequest  $request
-     * @param  \App\Models\Record  $record
-     * @return \Illuminate\Http\Response
-     */
-    public function update(UpdateRecordRequest $request, Record $record)
+    public function update(UpdateRecordRequest $request, Record $record, SaveRecord $saveRecord)
     {
-        
-        $this->validate($request, [
-            'artist_name' => 'required',
-            'title' => 'required',
-            'label_name' => 'required',
-            'buy_price' => 'nullable|numeric',
-            'current_price' => 'nullable|numeric',
-            'image' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
-        
-        // Ermitteln ob Artist vorhanden ist oder geändert worden ist
-        $get_artist_id = Artist::firstOrCreate([
-            'name' => $request->artist_name
-        ]);
-        $record->artist_id = $get_artist_id->id;
+        $data = [
+            ...$request->validated(),
+            'selling' => $request->boolean('selling'),
+            'sold' => $request->boolean('sold'),
+            'lost' => $request->boolean('lost'),
+        ];
+        $saveRecord($record, $data, $request->file('cover'), $request->boolean('remove_cover'));
 
-        $record->title = $request->title;
-
-        // Check if label_id is in the current input request
-        $get_label_id = Label::firstOrCreate([
-            'name' => $request->label_name
-        ]);
-        $record->label_id = $get_label_id->id;
-
-        $record->catalog_number = $request->catalog_number;
-        $record->matrix_number  = $request->matrix_number;
-        $record->barcode        = $request->barcode;
-
-        // Check if country_name is filled
-        if ($request->country_name) {
-            // If not, try to get it from the database.
-            $get_country_id = Country::firstOrCreate([
-                'name' => $request->country_name
-            ]);
-            $record->country_id = $get_country_id->id;
-        }
-
-        // Check if platform is filled
-        if ($request->platform) {
-            // If not, try to get it from the database.
-            $get_platform_id = Platform::firstOrCreate([
-                'name' => $request->platform
-            ]);
-            $record->platform_id = $get_platform_id->id;
-        }
-        $record->release_date   = $request->release_date;
-        $record->reissue_date   = $request->reissue_date;
-
-        if (is_numeric($request->grading_media)) $record->grading_media = $request->grading_media;
-        if (is_numeric($request->grading_cover)) $record->grading_cover  = $request->grading_cover;
-        if ($record->current_price != $request->current_price) {
-            //Save pricehistory
-            $pricehistory = new PriceHistory();
-            $pricehistory->price = str_replace(',', '.', $request->current_price);
-            $pricehistory->record_id = $record->id;
-            $pricehistory->platform_id = $record->platform_id;
-            $pricehistory->save();
-        }
-        $record->current_price  = ($request->current_price) ? str_replace(',', '.', $request->current_price) : $record->current_price = null;
-        $record->buy_price  = ($request->buy_price) ? str_replace(',', '.', $request->buy_price) : $record->buy_price = null;
-        $record->archive_number = $request->archive_number;
-        $record->note           = $request->note;
-        $sold = ($request->sold == "on") ? True : False;
-        $record->sold = $sold;
-        $record->sold_date = $request->sold_date;
-        $record->sold_to = $request->sold_to;
-        // FIXME str_replace kontrollieren. Wieso klappt das nicht?
-        $record->sold_price = $request->sold_price ? str_replace(',', '.', $request->sold_price) : $record->sold_price = null;
-        $lost = ($request->lost == "on") ? True : False;
-        $record->lost = $lost;
-        $selling = ($request->selling == "on") ? True : False;
-        $record->selling = $selling;
-
-        // Check for images
-        /* if ($request->file('image')) {
-            $image = $request->file('image');
-            $imageData = base64_encode(file_get_contents($image->getRealPath()));
-            // Base64-codierte Bilddaten in der Datenbank speichern
-            $imageModel = new Image();
-            $imageModel->image_data = $imageData;
-            $imageModel->reference = "record";
-            $imageModel->reference_id = $record->id;
-            $imageModel->save();
-    
-            return response()->json([
-                'success' => true,
-                'message' => 'Bild erfolgreich als Base64-Daten in der Datenbank gespeichert.',
-            ], 200);
-        } */
-        $record->save(); //persist the data
-        return redirect()->route('records.index')->with('info', 'Record ' . $record->title . ' von ' . $record->artist->name . ' updated successfully');
+        return redirect()->route('records.show', $record)
+            ->with('info', __('Platte „:title“ von :artist wurde gespeichert.', ['title' => $record->title, 'artist' => $record->artist->name]));
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Record  $record
-     * @return \Illuminate\Http\Response
-     */
     public function destroy(Record $record)
     {
-        //Retrieve the record
-        $record = Record::find($record->id);
-        /* $images = Image::where('reference', '=', 'record')
-            ->where('reference_id', '=', $record->id)
-            ->get();
-
-        foreach ($images as $image) {
-            unlink(public_path() . '/storage/' . $image->path);
-            $image->delete($image->name);
-        } */
-        //delete
+        CoverStorage::delete($record);
+        $record->prices()->delete();
         $record->delete();
-        return redirect()->route('records.index')->with('info', 'Record ' . $record->title . ' von ' . $record->artist->name . ' deleted successfully');
+
+        return redirect()->route('records.index')
+            ->with('info', __('Platte „:title“ von :artist wurde gelöscht.', ['title' => $record->title, 'artist' => $record->artist->name]));
     }
 
-    public function print(Record $record)
+    /**
+     * Cover images are stored outside of the public folder and delivered here.
+     */
+    public function cover(Request $request, Record $record)
     {
-        //Find the label        
-        //Return view to detail artist
-        $current = Carbon::now();
-        $current = $current->format('d.m.Y');
-        
+        $path = CoverStorage::path($record, $request->boolean('thumb'));
+        abort_if($path === null, 404);
 
-        $records = Record::orderBy('kind', 'ASC')
-                            ->orderBy('artist_id', 'ASC')
-                            ->where('selling', '=', '1')
-                            ->where('sold', '=', '0')
-                            ->get();
-
-        $pdf = PDF::loadView('records.print', ['records' => $records]);
-        return $pdf->stream('Verkaufsliste -' . $current . '.pdf');
-        //return view('records.print', ['records' => $records]);
+        return response()->file($path, ['Cache-Control' => 'private, max-age=86400']);
     }
 
+    public function print()
+    {
+        $current = Carbon::now()->format('d.m.Y');
+
+        $records = $this->sellingQuery()->with(['artist', 'country', 'editions'])->get();
+
+        $pdf = Pdf::loadView('records.print', ['records' => $records]);
+
+        return $pdf->stream(__('Verkaufsliste').' '.$current.'.pdf');
+    }
+
+    /**
+     * CSV export of the (filtered) record list.
+     */
+    public function export(Request $request)
+    {
+        $query = (new RecordFilter($request))->query()->with(['artist', 'label', 'country', 'platform', 'editions']);
+
+        return RecordCsv::download($query, 'recordloom-'.Carbon::now()->format('Y-m-d').'.csv');
+    }
+
+    /**
+     * Records that are marked for selling and not yet sold.
+     */
+    private function sellingQuery(): Builder
+    {
+        return Record::where('selling', true)
+            ->where('sold', false)
+            ->orderBy('kind', 'ASC')
+            ->orderBy('artist_id', 'ASC');
+    }
 }
