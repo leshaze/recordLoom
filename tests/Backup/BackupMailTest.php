@@ -97,36 +97,61 @@ test('the attachment is a readable copy of the database', function () {
     unlink($path);
 });
 
-test('with --if-due the backup runs every 7 days and catches up missed runs', function () {
+test('with --if-due the backup runs once a day and catches up missed runs', function () {
     $record = backupRecord();
-    $this->travelTo(now()->startOfDay());
+    $this->travelTo(now()->setTime(20, 0));
 
     // First check: never ran before, so it is due.
     $this->artisan('backup:mail --if-due')->assertSuccessful();
     Mail::assertSentCount(1);
 
-    // Changes during the week are not sent before 7 days have passed.
+    // Changes on the same day are not sent before the next day.
     $record->title = 'Geändert';
     $record->save();
-    $this->travel(3)->days();
+    $this->travel(3)->hours();
     $this->artisan('backup:mail --if-due');
     Mail::assertSentCount(1);
 
-    // The Pi was switched off on the due date and is started 10 days later: the backup is caught up.
-    $this->travel(7)->days();
+    // Next morning (before 20:00): due because the last run was on an earlier day, the time does not drift.
+    $this->travelTo(now()->addDay()->setTime(8, 0));
     $this->artisan('backup:mail --if-due');
     Mail::assertSentCount(2);
 
-    // Right after that it is not due again.
+    // Right after that it is not due again, later that day neither.
+    $record->title = 'Nochmals geändert';
+    $record->save();
     $this->travel(15)->minutes();
+    $this->artisan('backup:mail --if-due');
+    $this->travelTo(now()->setTime(23, 45));
+    $this->artisan('backup:mail --if-due');
+    Mail::assertSentCount(2);
+
+    // The Pi was switched off for 4 days: the backup is caught up as soon as it runs again.
+    $this->travel(4)->days();
+    $this->artisan('backup:mail --if-due');
+    Mail::assertSentCount(3);
+});
+
+test('a longer interval can be configured in days', function () {
+    config(['backup.interval_days' => 7]);
+    $record = backupRecord();
+    $this->artisan('backup:mail --if-due');
+
+    $record->title = 'Geändert';
+    $record->save();
+    $this->travel(6)->days();
+    $this->artisan('backup:mail --if-due');
+    Mail::assertSentCount(1);
+
+    $this->travel(1)->days();
     $this->artisan('backup:mail --if-due');
     Mail::assertSentCount(2);
 });
 
-test('a week without changes is checked but sends no mail', function () {
+test('a day without changes is checked but sends no mail', function () {
     backupRecord();
     $this->artisan('backup:mail --if-due');
-    $this->travel(8)->days();
+    $this->travel(1)->days();
     $this->artisan('backup:mail --if-due')->expectsOutputToContain('No changes');
 
     Mail::assertSentCount(1);

@@ -64,9 +64,8 @@ if (config('services.discogs.nightly_prices') && config('services.discogs.token'
 
 Artisan::command('backup:mail
     {--force : Send even if nothing has changed}
-    {--if-due : Only check when the last check is at least BACKUP_INTERVAL_DAYS ago (for the scheduler)}', function (DatabaseBackup $backup, CatchUpSchedule $schedule) {
-    $interval = config('backup.interval_days').' days';
-    if ($this->option('if-due') && ! $schedule->isDue('backup:mail', $interval)) {
+    {--if-due : Only check when the last check was BACKUP_INTERVAL_DAYS calendar days ago or more (for the scheduler)}', function (DatabaseBackup $backup, CatchUpSchedule $schedule) {
+    if ($this->option('if-due') && ! $schedule->isDueAfterDays('backup:mail', (int) config('backup.interval_days'))) {
         return 0;
     }
 
@@ -113,7 +112,7 @@ Artisan::command('backup:mail
 })->purpose('Mail a copy of the database when it has changed since the last backup');
 
 if (config('backup.enabled') && config('backup.mail_to')) {
-    // Checked every 15 minutes, runs when the last check is 7 days ago: a backup that was missed while
+    // Checked every 15 minutes, runs once per day (BACKUP_INTERVAL_DAYS): a backup that was missed while
     // the server was off is sent as soon as it runs again.
     Schedule::command('backup:mail --if-due')->everyFifteenMinutes()->withoutOverlapping();
 }

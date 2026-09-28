@@ -41,15 +41,17 @@ Setup:
 
 Discogs allows 60 requests per minute; search results and releases are cached.
 
-### Weekly backup by mail
+### Daily backup by mail
 
-Every 7 days RecordLoom mails a compressed copy of the SQLite database, but only if the collection has changed
+Once a day RecordLoom mails a compressed copy of the SQLite database, but only if the collection has changed
 since the last backup (sessions and cache do not count). Cover images are not included.
+`BACKUP_INTERVAL_DAYS` changes the interval (e.g. `7` for weekly).
 
 The server does not have to run all the time (e.g. a Raspberry Pi): the scheduler checks every 15 minutes whether
-the last check is 7 days ago, so a backup that was missed while the server was off is caught up at most 15 minutes
-after it is running again. The automatic Discogs price update (if enabled) works the same way with 24 hours
-(`BACKUP_INTERVAL_DAYS`, `DISCOGS_PRICE_INTERVAL_HOURS`).
+the last check was on an earlier day, so a backup that was missed while the server was off is caught up at most
+15 minutes after it is running again. Days are counted in the time zone of the app (`APP_TIMEZONE`, e.g.
+`Europe/Berlin`; default UTC). The automatic Discogs price update (if enabled) is caught up the same way after
+24 hours (`DISCOGS_PRICE_INTERVAL_HOURS`).
 
 1. Configure sending mails in the `.env` (`MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
    `MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM_ADDRESS`) and set the recipient: `BACKUP_MAIL_TO=you@example.com`
