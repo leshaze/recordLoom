@@ -32,8 +32,9 @@ class GroupFilter
 
     /**
      * @param  class-string<Model>  $model
+     * @param  list<string>  $searchColumns
      */
-    public function __construct(Request $request, private string $model, public string $route)
+    public function __construct(Request $request, private string $model, public string $route, private array $searchColumns = ['name', 'description'])
     {
         $sort = $request->query('sort');
         $records = $request->query('records');
@@ -62,7 +63,11 @@ class GroupFilter
 
         if ($v['q'] !== '') {
             $like = '%'.$v['q'].'%';
-            $query->where(fn (Builder $query) => $query->where('name', 'like', $like)->orWhere('description', 'like', $like));
+            $query->where(function (Builder $query) use ($like) {
+                foreach ($this->searchColumns as $column) {
+                    $query->orWhere($column, 'like', $like);
+                }
+            });
         }
 
         match ($v['records']) {

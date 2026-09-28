@@ -3,6 +3,7 @@
 use App\Models\Artist;
 use App\Models\Edition;
 use App\Models\Label;
+use App\Models\Platform;
 use App\Models\Record;
 use App\Services\Discogs\DiscogsClient;
 use Illuminate\Http\UploadedFile;
@@ -57,6 +58,28 @@ test('artists and labels can be searched, filtered and sorted', function () {
 
     // Invalid values fall back to the defaults.
     $this->get(route('labels.index', ['sort' => 'id; drop', 'dir' => 'x', 'records' => 'x', 'per_page' => 5]))->assertOk();
+});
+
+test('platforms can be searched, filtered and sorted like artists and labels', function () {
+    $shop = Platform::create(['name' => 'Plattenladen']);
+    $discogs = Platform::forceCreate(['name' => 'Discogs', 'url' => 'https://www.discogs.com']);
+    Platform::forceCreate(['name' => 'Flohmarkt', 'url' => 'javascript:alert(1)']);
+    newRecord(['title' => 'Autobahn', 'current_price' => '30', 'platform_id' => $shop->id]);
+    newRecord(['title' => 'Radio-Aktivität', 'current_price' => '20', 'platform_id' => $discogs->id]);
+    newRecord(['title' => 'Mensch-Maschine', 'current_price' => '1000', 'sold' => true, 'platform_id' => $discogs->id]);
+
+    $this->get(route('platforms.index'))
+        ->assertSeeInOrder(['Discogs', 'Flohmarkt', 'Plattenladen'])
+        ->assertSee('href="https://www.discogs.com"', false)
+        ->assertDontSee('href="javascript:alert(1)"', false)
+        ->assertDontSee('1.020,00 €');
+
+    $this->get(route('platforms.index', ['sort' => 'lp_value', 'dir' => 'desc']))->assertSeeInOrder(['Plattenladen', 'Discogs', 'Flohmarkt']);
+    $this->get(route('platforms.index', ['q' => 'discogs.com']))->assertSee('Discogs')->assertDontSee('Plattenladen');
+    $this->get(route('platforms.index', ['records' => 'without']))->assertSee('Flohmarkt')->assertDontSee('Plattenladen');
+
+    // Sold records are not part of the value on the detail page either.
+    $this->get(route('platforms.show', $discogs))->assertSee('20,00 €')->assertDontSee('1.020,00 €');
 });
 
 test('the record list can be searched, filtered and sorted', function () {

@@ -5,16 +5,17 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePlatformRequest;
 use App\Http\Requests\UpdatePlatformRequest;
 use App\Models\Platform;
-use App\Models\Record;
+use App\Support\GroupFilter;
+use Illuminate\Http\Request;
 
 class PlatformController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $platforms = Platform::orderBy('name')->paginate(20);
-        $records = Record::whereIn('platform_id', $platforms->pluck('id'))->get(['platform_id', 'kind', 'current_price']);
+        $filter = new GroupFilter($request, Platform::class, 'platforms.index', ['name', 'description', 'url']);
+        $platforms = $filter->query()->paginate($filter->values['per_page'])->withQueryString();
 
-        return view('platforms.all', ['platforms' => $platforms, 'records' => $records]);
+        return view('platforms.all', ['platforms' => $platforms, 'filter' => $filter]);
     }
 
     public function create()
@@ -42,7 +43,7 @@ class PlatformController extends Controller
     public function show(Platform $platform)
     {
         $records = $platform->records()->with(['artist', 'label', 'editions'])->get();
-        $total_value = $records->sum('current_price');
+        $total_value = $records->where('sold', false)->sum('current_price');
 
         return view('platforms.details', ['platform' => $platform, 'records' => $records, 'total_value' => $total_value]);
     }
