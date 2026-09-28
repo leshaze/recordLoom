@@ -1,5 +1,5 @@
-{{-- List of artists or labels with search, sorting and paging; table on large screens, cards on phones. --}}
-@props(['items', 'filter', 'resource', 'title', 'createLabel', 'deleteMessage'])
+{{-- List of artists, labels or platforms with search, sorting and paging; table on large screens, cards on phones. --}}
+@props(['items', 'filter', 'resource', 'title', 'createLabel', 'deleteMessage', 'withUrl' => false, 'searchPlaceholder' => null])
 
 @php $v = $filter->values; @endphp
 <div class="container-fluid px-lg-4">
@@ -18,7 +18,7 @@
             <div class="col-12 col-lg-6">
                 <label for="filter-q" class="form-label small mb-1">{{ __('Suche') }}</label>
                 <input type="search" name="q" id="filter-q" value="{{ $v['q'] }}" class="form-control form-control-sm"
-                    placeholder="{{ __('Name, Beschreibung …') }}">
+                    placeholder="{{ $searchPlaceholder ?? __('Name, Beschreibung …') }}">
             </div>
             <div class="col-6 col-md-4 col-lg-2">
                 <label for="filter-records" class="form-label small mb-1">{{ __('Platten') }}</label>
@@ -67,6 +67,7 @@
                             <th class="text-end"><x-sort-link :filter="$filter" sort="lp_value">{{ __('Wert LPs') }}</x-sort-link></th>
                             <th class="text-end"><x-sort-link :filter="$filter" sort="cd_value">{{ __('Wert CDs') }}</x-sort-link></th>
                             <th>{{ __('Beschreibung') }}</th>
+                            @if ($withUrl) <th>{{ __('URL') }}</th> @endif
                             <th class="text-end">{{ __('Aktionen') }}</th>
                         </tr>
                     </thead>
@@ -79,6 +80,9 @@
                                 <td class="text-end text-nowrap">{{ \App\Support\Format::euro($item->lp_value ?: null) }}</td>
                                 <td class="text-end text-nowrap">{{ \App\Support\Format::euro($item->cd_value ?: null) }}</td>
                                 <td>{{ $item->description }}</td>
+                                @if ($withUrl)
+                                    <td class="text-break">@if ($item->safe_url)<a href="{{ $item->safe_url }}" target="_blank" rel="noopener noreferrer">{{ $item->url }}</a>@endif</td>
+                                @endif
                                 <td class="text-end text-nowrap">
                                     <a href="{{ route($resource.'.edit', $item) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Bearbeiten') }}" aria-label="{{ __('Bearbeiten') }}"><i class="bi bi-pencil-square"></i></a>
                                     <x-delete-button :action="route($resource.'.destroy', $item)" :message="$deleteMessage($item)" />
@@ -104,6 +108,9 @@
                     <a href="{{ route($resource.'.show', $item) }}" class="list-group-item list-group-item-action d-flex gap-3 align-items-center">
                         <div class="flex-grow-1" style="min-width: 0;">
                             <div class="fw-semibold text-break">{{ $item->name }}</div>
+                            @if ($withUrl && $item->safe_url)
+                                <div class="small text-body-secondary text-break"><i class="bi bi-link-45deg"></i> {{ parse_url($item->safe_url, PHP_URL_HOST) ?: $item->url }}</div>
+                            @endif
                             @if (filled($item->description))
                                 <div class="small text-body-secondary text-break">{{ $item->description }}</div>
                             @endif
