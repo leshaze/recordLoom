@@ -320,3 +320,48 @@ test('an unknown barcode offers to add the record via discogs', function () {
 test('the navigation offers the barcode scanner', function () {
     $this->get('/')->assertSee('data-barcode-scan="collection"', false)->assertSee('id="barcode-modal"', false);
 });
+
+test('artists, labels and platforms share create, edit and delete', function (string $resource, string $model, string $field) {
+    $this->get(route($resource.'.create'))->assertOk()->assertSee('name="'.$field.'"', false);
+
+    $this->post(route($resource.'.store'), [$field => 'Sky', 'description' => 'Hamburg'])->assertSessionHas('info');
+    $item = $model::firstWhere('name', 'Sky');
+    expect($item->description)->toBe('Hamburg');
+
+    // A second entry with the same name is refused.
+    $this->post(route($resource.'.store'), [$field => 'Sky'])->assertSessionHas('error');
+    expect($model::where('name', 'Sky')->count())->toBe(1);
+
+    $this->get(route($resource.'.edit', $item))->assertOk()->assertSee('value="Sky"', false);
+    $this->put(route($resource.'.update', $item), [$field => 'Sky Records', 'description' => ''])->assertRedirect(route($resource.'.index'));
+    expect($item->fresh()->name)->toBe('Sky Records')->and($item->fresh()->description)->toBeNull();
+
+    // Renaming to the name of another entry is a validation error.
+    $model::create(['name' => 'Ohr']);
+    $this->put(route($resource.'.update', $item), [$field => 'Ohr'])->assertSessionHasErrors($field);
+
+    $this->get(route($resource.'.show', $item))->assertOk()->assertSee('Sky Records');
+    $this->delete(route($resource.'.destroy', $item))->assertSessionHas('info');
+    expect($model::find($item->id))->toBeNull();
+    $this->get(route($resource.'.show', $item))->assertNotFound();
+})->with([
+    'artists' => ['artists', Artist::class, 'artist_name'],
+    'labels' => ['labels', Label::class, 'label_name'],
+    'platforms' => ['platforms', Platform::class, 'platform_name'],
+]);
+
+test('the pdf of a label lists the artists, the pdf of an artist the labels', function () {
+    $record = newRecord(['artist' => 'Harmonia', 'label' => 'Brain']);
+
+    expect($this->get(route('labels.print', $record->label_id))->assertOk()->headers->get('content-type'))->toContain('pdf');
+    $this->get(route('artists.print', $record->artist_id))->assertOk();
+
+    // The PDF itself is compressed, so the columns are checked in the rendered view.
+    $html = fn (string $relation, $item) => view('groups.print', [
+        'item' => $item, 'records' => $item->records()->with($relation)->get(), 'totalValue' => 0, 'relation' => $relation,
+    ])->render();
+    expect($html('artist', $record->label))->toContain('Harmonia')
+        ->and($html('label', $record->artist))->toContain('Brain');
+
+    $this->get('/platforms/1/print')->assertNotFound();
+});
