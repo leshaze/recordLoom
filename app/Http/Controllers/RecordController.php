@@ -62,11 +62,6 @@ class RecordController extends Controller
     /**
      * The old "For Selling" page is now a filter of the record list.
      */
-    public function selling()
-    {
-        return redirect()->route('records.index', ['status' => 'selling']);
-    }
-
     public function create()
     {
         return view('records.create', [

@@ -104,10 +104,6 @@ test('the record list can be searched, filtered and sorted', function () {
     $this->get(route('records.index', ['sort' => 'drop table', 'per_page' => 5000, 'status' => 'x']))->assertOk();
 });
 
-test('the old selling page redirects to the filtered list', function () {
-    $this->get(route('records.selling'))->assertRedirect(route('records.index', ['status' => 'selling']));
-});
-
 test('gradings are shown as readable badges', function () {
     $record = newRecord(['grading_media' => 70, 'grading_cover' => 100]);
 
