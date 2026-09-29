@@ -361,3 +361,33 @@ test('the pdf of a label lists the artists, the pdf of an artist the labels', fu
 
     $this->get('/platforms/1/print')->assertNotFound();
 });
+
+test('the record page pages through the last used list', function () {
+    $a = newRecord(['title' => 'A-Seite', 'current_price' => '30']);
+    $b = newRecord(['title' => 'B-Seite', 'current_price' => '20']);
+    $c = newRecord(['title' => 'C-Seite', 'current_price' => '10']);
+    newRecord(['title' => 'CD', 'kind' => 'CD']);
+
+    // The list was sorted by price, only LPs, 15 per page.
+    $this->get(route('records.index', ['kind' => 'LP', 'sort' => 'price', 'dir' => 'desc']));
+
+    $this->get(route('records.show', $b))->assertOk()
+        ->assertSee('2 von 3')
+        ->assertSee('href="'.route('records.show', $a).'"', false)
+        ->assertSee('href="'.route('records.show', $c).'"', false)
+        ->assertSee(e(route('records.index', ['kind' => 'LP', 'sort' => 'price', 'dir' => 'desc'])), false);
+
+    // A record that is not part of the list only gets the link back.
+    $this->get(route('records.show', Record::firstWhere('kind', 'CD')))->assertOk()->assertDontSee('von 3')->assertSee('Zur Liste');
+});
+
+test('back to the list opens the page that contains the record', function () {
+    foreach (range(1, 20) as $number) {
+        newRecord(['title' => sprintf('Platte %02d', $number)]);
+    }
+    $this->get(route('records.index', ['sort' => 'title']));
+
+    $this->get(route('records.show', Record::firstWhere('title', 'Platte 17')))
+        ->assertSee('17 von 20')
+        ->assertSee(e(route('records.index', ['sort' => 'title', 'page' => 2])), false);
+});

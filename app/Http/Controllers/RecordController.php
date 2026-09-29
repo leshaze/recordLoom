@@ -27,8 +27,14 @@ class RecordController extends Controller
      */
     private const LIST_RELATIONS = ['artist', 'label', 'country', 'editions'];
 
+    /**
+     * Session key of the last used list filter (for "back to the list" and previous / next on the record page).
+     */
+    private const LIST_SESSION = 'records.list_query';
+
     public function index(Request $request)
     {
+        $request->session()->put(self::LIST_SESSION, $request->query());
         $filter = new RecordFilter($request);
         $records = $filter->query()
             ->with(self::LIST_RELATIONS)
@@ -84,12 +90,46 @@ class RecordController extends Controller
             ->with('warning', $warning);
     }
 
-    public function show(Record $record)
+    public function show(Request $request, Record $record)
     {
         $record->load(['artist', 'label', 'country', 'platform', 'editions']);
         $prices = $record->prices()->with('platform')->latest()->take(5)->get()->reverse();
 
-        return view('records.details', ['record' => $record, 'prices' => $prices]);
+        return view('records.details', [
+            'record' => $record,
+            'prices' => $prices,
+            'navigation' => $this->navigation($request, $record),
+        ]);
+    }
+
+    /**
+     * Position of the record in the last used list and its neighbours, so the record page can page through
+     * the search result. The link back to the list keeps filter, sorting and page.
+     *
+     * @return array{list: string, position: ?int, total: int, previous: ?int, next: ?int}
+     */
+    private function navigation(Request $request, Record $record): array
+    {
+        $query = $request->session()->get(self::LIST_SESSION, []);
+        $filter = new RecordFilter(Request::create('/', 'GET', $query));
+        $ids = $filter->query()->pluck('id');
+        $index = $ids->search($record->id);
+
+        if ($index !== false) {
+            // Back to the page of the list that contains the record.
+            $query['page'] = intdiv($index, $filter->values['per_page']) + 1;
+            if ($query['page'] === 1) {
+                unset($query['page']);
+            }
+        }
+
+        return [
+            'list' => route('records.index', $query),
+            'position' => $index === false ? null : $index + 1,
+            'total' => $ids->count(),
+            'previous' => $index === false ? null : $ids->get($index - 1),
+            'next' => $index === false ? null : $ids->get($index + 1),
+        ];
     }
 
     public function edit(Record $record)
