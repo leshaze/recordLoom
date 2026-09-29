@@ -25,17 +25,12 @@ class RecordController extends Controller
     /**
      * Relations shown in the record lists.
      */
-    private const LIST_RELATIONS = ['artist', 'label', 'country', 'editions'];
-
-    /**
-     * Session key of the last used list filter (for "back to the list" and previous / next on the record page).
-     */
-    private const LIST_SESSION = 'records.list_query';
+    public const LIST_RELATIONS = ['artist', 'label', 'country', 'editions'];
 
     public function index(Request $request)
     {
-        $request->session()->put(self::LIST_SESSION, $request->query());
         $filter = new RecordFilter($request);
+        $filter->remember($request);
         $records = $filter->query()
             ->with(self::LIST_RELATIONS)
             ->paginate($filter->values['per_page'])
@@ -110,8 +105,7 @@ class RecordController extends Controller
      */
     private function navigation(Request $request, Record $record): array
     {
-        $query = $request->session()->get(self::LIST_SESSION, []);
-        $filter = new RecordFilter(Request::create('/', 'GET', $query));
+        [$filter, $query] = RecordFilter::remembered($request);
         $ids = $filter->query()->pluck('id');
         $index = $ids->search($record->id);
 
@@ -124,7 +118,7 @@ class RecordController extends Controller
         }
 
         return [
-            'list' => route('records.index', $query),
+            'list' => $filter->url($query),
             'position' => $index === false ? null : $index + 1,
             'total' => $ids->count(),
             'previous' => $index === false ? null : $ids->get($index - 1),

@@ -98,6 +98,16 @@ class GroupFilter
         return array_filter([...$this->values, 'sort' => $sort, 'dir' => $dir], fn ($value) => $value !== null && $value !== '');
     }
 
+    /**
+     * URL of the list with the given query string.
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function url(array $query = []): string
+    {
+        return route($this->route, $query);
+    }
+
     public function isActive(): bool
     {
         return $this->values['q'] !== '' || $this->values['records'] !== null;

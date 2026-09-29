@@ -5,7 +5,7 @@
             <div>
                 <h1 class="h3 mb-0">{{ $item->name }}</h1>
                 <div class="text-body-secondary">
-                    {{ trans_choice(':count Platte|:count Platten', $records->count()) }} · {{ __('Wert') }} {{ \App\Support\Format::euro($totalValue ?: 0) }}
+                    {{ trans_choice(':count Platte|:count Platten', $recordCount) }} · {{ __('Wert') }} {{ \App\Support\Format::euro($totalValue ?: 0) }}
                     @if ($withUrl && $item->safe_url)
                         · <a href="{{ $item->safe_url }}" target="_blank" rel="noopener noreferrer">{{ $item->url }}</a>
                     @endif
@@ -22,6 +22,6 @@
         @if ($item->description)
             <p style="white-space: pre-line;">{{ $item->description }}</p>
         @endif
-        @include('records._table', ['records' => $records])
+        @include('records._list')
     </div>
 </x-app-layout>

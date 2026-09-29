@@ -391,3 +391,44 @@ test('back to the list opens the page that contains the record', function () {
         ->assertSee('17 von 20')
         ->assertSee(e(route('records.index', ['sort' => 'title', 'page' => 2])), false);
 });
+
+test('the records on the page of an artist, label or platform can be filtered and sorted', function () {
+    $can = newRecord(['artist' => 'Can', 'label' => 'United Artists', 'title' => 'Tago Mago', 'current_price' => '40']);
+    newRecord(['artist' => 'Can', 'label' => 'United Artists', 'title' => 'Future Days', 'kind' => 'CD', 'current_price' => '15']);
+    newRecord(['artist' => 'Can', 'label' => 'Spoon', 'title' => 'Ege Bamyasi', 'current_price' => '60', 'sold' => true]);
+    newRecord(['artist' => 'Neu!', 'label' => 'United Artists', 'title' => 'Neu! 75']);
+    $artist = $can->artist;
+
+    // Only the records of the artist, the totals always count all of them.
+    $this->get(route('artists.show', $artist))->assertOk()
+        ->assertSee('3 Platten')->assertSee('55,00 €')
+        ->assertSee(['Tago Mago', 'Future Days', 'Ege Bamyasi'])->assertDontSee('Neu! 75')
+        ->assertSee('name="kind"', false)->assertSee('name="label"', false);
+
+    $this->get(route('artists.show', [$artist, 'kind' => 'CD']))->assertSee('Future Days')->assertDontSee('Tago Mago')->assertSee('3 Platten');
+    $this->get(route('artists.show', [$artist, 'status' => 'sold']))->assertSee('Ege Bamyasi')->assertDontSee('Tago Mago');
+    $this->get(route('artists.show', [$artist, 'q' => 'mago']))->assertSee('Tago Mago')->assertDontSee('Future Days');
+    $this->get(route('artists.show', [$artist, 'sort' => 'price', 'dir' => 'desc']))->assertSeeInOrder(['Ege Bamyasi', 'Tago Mago', 'Future Days']);
+
+    // Sort links and "reset" stay on the page of the artist.
+    $this->get(route('artists.show', [$artist, 'kind' => 'LP']))
+        ->assertSee(e(route('artists.show', [$artist, 'kind' => 'LP', 'sort' => 'title', 'dir' => 'asc'])), false)
+        ->assertSee('href="'.route('artists.show', $artist).'"', false);
+
+    // On the page of a label there is no label filter.
+    $this->get(route('labels.show', $can->label))->assertOk()
+        ->assertSee(['Tago Mago', 'Neu! 75'])->assertDontSee('Ege Bamyasi')->assertDontSee('name="label"', false);
+});
+
+test('the record page pages through the records of the artist it was opened from', function () {
+    $first = newRecord(['artist' => 'Can', 'title' => 'A Tago Mago']);
+    newRecord(['artist' => 'Amon Düül', 'title' => 'B Yeti']);
+    $last = newRecord(['artist' => 'Can', 'title' => 'C Future Days']);
+
+    $this->get(route('artists.show', [$first->artist, 'sort' => 'title']));
+
+    $this->get(route('records.show', $first))
+        ->assertSee('1 von 2')
+        ->assertSee('href="'.route('records.show', $last).'"', false)
+        ->assertSee(e(route('artists.show', [$first->artist, 'sort' => 'title'])), false);
+});

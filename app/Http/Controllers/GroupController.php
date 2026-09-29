@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Country;
+use App\Models\Edition;
+use App\Models\Label;
 use App\Support\GroupFilter;
+use App\Support\RecordFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -61,12 +66,22 @@ abstract class GroupController extends Controller
     public function show(Request $request): View
     {
         $item = $this->item($request);
-        $records = $item->records()->with(['artist', 'label', 'editions'])->get();
+        $parameter = Str::singular($this->resource);
+
+        // The records of the entry with the filter of the record list.
+        $filter = (new RecordFilter($request))
+            ->within($parameter.'_id', $item->id, $this->resource.'.show', [$parameter => $item->id]);
+        $filter->remember($request);
 
         return view('groups.details', [
             'item' => $item,
-            'records' => $records,
-            'totalValue' => $records->where('sold', false)->sum('current_price'),
+            'records' => $filter->query()->with(RecordController::LIST_RELATIONS)->paginate($filter->values['per_page'])->withQueryString(),
+            'filter' => $filter,
+            'recordCount' => $item->records()->count(),
+            'totalValue' => $item->records()->where('sold', false)->sum('current_price'),
+            'labels' => $this->resource === 'labels' ? null : Label::orderBy('name')->get(['id', 'name']),
+            'countries' => Country::orderBy('name')->get(['id', 'name']),
+            'editions' => Edition::orderBy('name')->get(['id', 'name']),
         ] + $this->shared());
     }
 
