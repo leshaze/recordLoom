@@ -1,11 +1,12 @@
-<x-print-layout :title="$artist->name" :records="$records"
-    :subtitle="trans_choice(':count Platte|:count Platten', $records->count()).' · '.__('Wert').' '.\App\Support\Format::euro($total_value ?: 0)">
+{{-- PDF of an artist or label; $relation is the other one (label or artist) shown next to the title. --}}
+<x-print-layout :title="$item->name" :records="$records"
+    :subtitle="trans_choice(':count Platte|:count Platten', $records->count()).' · '.__('Wert').' '.\App\Support\Format::euro($totalValue ?: 0)">
     <table>
         <thead>
             <tr>
                 <th style="width: 4%;">{{ __('Art') }}</th>
                 <th style="width: 19%;">{{ __('Titel') }}</th>
-                <th style="width: 12%;">{{ __('Label') }}</th>
+                <th style="width: 12%;">{{ $relation === 'label' ? __('Label') : __('Künstler') }}</th>
                 <th style="width: 8%;">{{ __('Grading') }}<br><span class="muted">{{ __('Media / Cover') }}</span></th>
                 <th style="width: 10%;">{{ __('Katalog-Nr.') }}</th>
                 <th style="width: 12%;">{{ __('Matrix-Nr.') }}</th>
@@ -26,7 +27,7 @@
                             <br><span class="muted">{{ $record->editions->pluck('label')->implode(', ') }}</span>
                         @endif
                     </td>
-                    <td>{{ $record->label->name }}</td>
+                    <td>{{ $record->{$relation}->name }}</td>
                     <td class="nowrap"><x-print-grading :record="$record" /></td>
                     <td>{{ $record->catalog_number }}</td>
                     <td>{{ $record->matrix_number }}</td>

@@ -13,6 +13,9 @@ class Record extends Model
     {
         return [
             'sold_on' => 'date',
+            'current_price' => 'decimal:2',
+            'buy_price' => 'decimal:2',
+            'sold_price' => 'decimal:2',
             'selling' => 'boolean',
             'sold' => 'boolean',
             'lost' => 'boolean',

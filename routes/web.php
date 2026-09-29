@@ -31,7 +31,6 @@ Route::middleware('auth')->group(function () {
 require __DIR__.'/auth.php';
 
 Route::get('/records/print', [RecordController::class, 'print'])->name('records.print');
-Route::get('/records/selling', [RecordController::class, 'selling'])->name('records.selling');
 Route::get('/records/barcode', [RecordController::class, 'barcode'])->name('records.barcode');
 Route::get('/records/export', [RecordController::class, 'export'])->name('records.export');
 Route::get('/records/import', [RecordImportController::class, 'create'])->name('records.import');

@@ -31,6 +31,19 @@ class CatchUpSchedule
         return $last === null || $last->isFuture() || $last->add($interval)->lessThanOrEqualTo(now());
     }
 
+    /**
+     * Due when the task never ran or its last run was at least $days calendar days ago (1 = on an earlier day).
+     * Unlike isDue() the time of day does not matter, so a daily task does not drift to a later hour
+     * and is not skipped on days the server is only switched on before that hour.
+     */
+    public function isDueAfterDays(string $task, int $days): bool
+    {
+        $last = $this->lastRun($task);
+
+        return $last === null || $last->isFuture()
+            || $last->setTimezone(now()->getTimezone())->startOfDay()->addDays(max(1, $days))->lessThanOrEqualTo(now());
+    }
+
     public function markRun(string $task): void
     {
         $runs = $this->runs();

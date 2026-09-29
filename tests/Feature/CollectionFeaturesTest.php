@@ -104,10 +104,6 @@ test('the record list can be searched, filtered and sorted', function () {
     $this->get(route('records.index', ['sort' => 'drop table', 'per_page' => 5000, 'status' => 'x']))->assertOk();
 });
 
-test('the old selling page redirects to the filtered list', function () {
-    $this->get(route('records.selling'))->assertRedirect(route('records.index', ['status' => 'selling']));
-});
-
 test('gradings are shown as readable badges', function () {
     $record = newRecord(['grading_media' => 70, 'grading_cover' => 100]);
 
@@ -319,4 +315,120 @@ test('an unknown barcode offers to add the record via discogs', function () {
 
 test('the navigation offers the barcode scanner', function () {
     $this->get('/')->assertSee('data-barcode-scan="collection"', false)->assertSee('id="barcode-modal"', false);
+});
+
+test('artists, labels and platforms share create, edit and delete', function (string $resource, string $model, string $field) {
+    $this->get(route($resource.'.create'))->assertOk()->assertSee('name="'.$field.'"', false);
+
+    $this->post(route($resource.'.store'), [$field => 'Sky', 'description' => 'Hamburg'])->assertSessionHas('info');
+    $item = $model::firstWhere('name', 'Sky');
+    expect($item->description)->toBe('Hamburg');
+
+    // A second entry with the same name is refused.
+    $this->post(route($resource.'.store'), [$field => 'Sky'])->assertSessionHas('error');
+    expect($model::where('name', 'Sky')->count())->toBe(1);
+
+    $this->get(route($resource.'.edit', $item))->assertOk()->assertSee('value="Sky"', false);
+    $this->put(route($resource.'.update', $item), [$field => 'Sky Records', 'description' => ''])->assertRedirect(route($resource.'.index'));
+    expect($item->fresh()->name)->toBe('Sky Records')->and($item->fresh()->description)->toBeNull();
+
+    // Renaming to the name of another entry is a validation error.
+    $model::create(['name' => 'Ohr']);
+    $this->put(route($resource.'.update', $item), [$field => 'Ohr'])->assertSessionHasErrors($field);
+
+    $this->get(route($resource.'.show', $item))->assertOk()->assertSee('Sky Records');
+    $this->delete(route($resource.'.destroy', $item))->assertSessionHas('info');
+    expect($model::find($item->id))->toBeNull();
+    $this->get(route($resource.'.show', $item))->assertNotFound();
+})->with([
+    'artists' => ['artists', Artist::class, 'artist_name'],
+    'labels' => ['labels', Label::class, 'label_name'],
+    'platforms' => ['platforms', Platform::class, 'platform_name'],
+]);
+
+test('the pdf of a label lists the artists, the pdf of an artist the labels', function () {
+    $record = newRecord(['artist' => 'Harmonia', 'label' => 'Brain']);
+
+    expect($this->get(route('labels.print', $record->label_id))->assertOk()->headers->get('content-type'))->toContain('pdf');
+    $this->get(route('artists.print', $record->artist_id))->assertOk();
+
+    // The PDF itself is compressed, so the columns are checked in the rendered view.
+    $html = fn (string $relation, $item) => view('groups.print', [
+        'item' => $item, 'records' => $item->records()->with($relation)->get(), 'totalValue' => 0, 'relation' => $relation,
+    ])->render();
+    expect($html('artist', $record->label))->toContain('Harmonia')
+        ->and($html('label', $record->artist))->toContain('Brain');
+
+    $this->get('/platforms/1/print')->assertNotFound();
+});
+
+test('the record page pages through the last used list', function () {
+    $a = newRecord(['title' => 'A-Seite', 'current_price' => '30']);
+    $b = newRecord(['title' => 'B-Seite', 'current_price' => '20']);
+    $c = newRecord(['title' => 'C-Seite', 'current_price' => '10']);
+    newRecord(['title' => 'CD', 'kind' => 'CD']);
+
+    // The list was sorted by price, only LPs, 15 per page.
+    $this->get(route('records.index', ['kind' => 'LP', 'sort' => 'price', 'dir' => 'desc']));
+
+    $this->get(route('records.show', $b))->assertOk()
+        ->assertSee('2 von 3')
+        ->assertSee('href="'.route('records.show', $a).'"', false)
+        ->assertSee('href="'.route('records.show', $c).'"', false)
+        ->assertSee(e(route('records.index', ['kind' => 'LP', 'sort' => 'price', 'dir' => 'desc'])), false);
+
+    // A record that is not part of the list only gets the link back.
+    $this->get(route('records.show', Record::firstWhere('kind', 'CD')))->assertOk()->assertDontSee('von 3')->assertSee('Zur Liste');
+});
+
+test('back to the list opens the page that contains the record', function () {
+    foreach (range(1, 20) as $number) {
+        newRecord(['title' => sprintf('Platte %02d', $number)]);
+    }
+    $this->get(route('records.index', ['sort' => 'title']));
+
+    $this->get(route('records.show', Record::firstWhere('title', 'Platte 17')))
+        ->assertSee('17 von 20')
+        ->assertSee(e(route('records.index', ['sort' => 'title', 'page' => 2])), false);
+});
+
+test('the records on the page of an artist, label or platform can be filtered and sorted', function () {
+    $can = newRecord(['artist' => 'Can', 'label' => 'United Artists', 'title' => 'Tago Mago', 'current_price' => '40']);
+    newRecord(['artist' => 'Can', 'label' => 'United Artists', 'title' => 'Future Days', 'kind' => 'CD', 'current_price' => '15']);
+    newRecord(['artist' => 'Can', 'label' => 'Spoon', 'title' => 'Ege Bamyasi', 'current_price' => '60', 'sold' => true]);
+    newRecord(['artist' => 'Neu!', 'label' => 'United Artists', 'title' => 'Neu! 75']);
+    $artist = $can->artist;
+
+    // Only the records of the artist, the totals always count all of them.
+    $this->get(route('artists.show', $artist))->assertOk()
+        ->assertSee('3 Platten')->assertSee('55,00 €')
+        ->assertSee(['Tago Mago', 'Future Days', 'Ege Bamyasi'])->assertDontSee('Neu! 75')
+        ->assertSee('name="kind"', false)->assertSee('name="label"', false);
+
+    $this->get(route('artists.show', [$artist, 'kind' => 'CD']))->assertSee('Future Days')->assertDontSee('Tago Mago')->assertSee('3 Platten');
+    $this->get(route('artists.show', [$artist, 'status' => 'sold']))->assertSee('Ege Bamyasi')->assertDontSee('Tago Mago');
+    $this->get(route('artists.show', [$artist, 'q' => 'mago']))->assertSee('Tago Mago')->assertDontSee('Future Days');
+    $this->get(route('artists.show', [$artist, 'sort' => 'price', 'dir' => 'desc']))->assertSeeInOrder(['Ege Bamyasi', 'Tago Mago', 'Future Days']);
+
+    // Sort links and "reset" stay on the page of the artist.
+    $this->get(route('artists.show', [$artist, 'kind' => 'LP']))
+        ->assertSee(e(route('artists.show', [$artist, 'kind' => 'LP', 'sort' => 'title', 'dir' => 'asc'])), false)
+        ->assertSee('href="'.route('artists.show', $artist).'"', false);
+
+    // On the page of a label there is no label filter.
+    $this->get(route('labels.show', $can->label))->assertOk()
+        ->assertSee(['Tago Mago', 'Neu! 75'])->assertDontSee('Ege Bamyasi')->assertDontSee('name="label"', false);
+});
+
+test('the record page pages through the records of the artist it was opened from', function () {
+    $first = newRecord(['artist' => 'Can', 'title' => 'A Tago Mago']);
+    newRecord(['artist' => 'Amon Düül', 'title' => 'B Yeti']);
+    $last = newRecord(['artist' => 'Can', 'title' => 'C Future Days']);
+
+    $this->get(route('artists.show', [$first->artist, 'sort' => 'title']));
+
+    $this->get(route('records.show', $first))
+        ->assertSee('1 von 2')
+        ->assertSee('href="'.route('records.show', $last).'"', false)
+        ->assertSee(e(route('artists.show', [$first->artist, 'sort' => 'title'])), false);
 });
