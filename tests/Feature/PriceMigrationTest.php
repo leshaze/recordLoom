@@ -53,3 +53,27 @@ test('prices are sorted as numbers', function () {
 
     $this->get(route('records.index', ['sort' => 'price', 'dir' => 'desc']))->assertSeeInOrder(['Hundert', 'Zwanzig', 'Neun']);
 });
+
+test('empty prices become null, so the record page does not fail', function () {
+    $record = priceRecord();
+    DB::table('records')->where('id', $record->id)->update(['current_price' => '', 'buy_price' => ' ', 'sold_price' => '']);
+    DB::table('price_history')->insert(['record_id' => $record->id, 'price' => '', 'created_at' => now(), 'updated_at' => now()]);
+
+    (require database_path('migrations/2026_09_30_000000_clear_empty_prices.php'))->up();
+
+    expect(DB::table('records')->where('id', $record->id)->first(['current_price', 'buy_price', 'sold_price']))
+        ->toEqual((object) ['current_price' => null, 'buy_price' => null, 'sold_price' => null])
+        ->and(PriceHistory::count())->toBe(0);
+    $this->get(route('records.show', $record))->assertOk();
+    $this->get(route('records.index'))->assertOk();
+});
+
+test('the price migration also turns empty text into null', function () {
+    $record = priceRecord();
+    DB::table('records')->where('id', $record->id)->update(['current_price' => '', 'buy_price' => '5']);
+
+    (require database_path('migrations/2026_09_29_000000_store_prices_as_decimals.php'))->up();
+
+    expect(DB::table('records')->where('id', $record->id)->value('current_price'))->toBeNull()
+        ->and($record->fresh()->buy_price)->toBe('5.00');
+});

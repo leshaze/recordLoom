@@ -62,7 +62,8 @@ return new class extends Migration
                 if ($keep) {
                     $notes[] = $label.': '.trim($old);
                 }
-                if ((string) $price !== (string) $old) {
+                // Compare strictly, so that empty text ('') also becomes null.
+                if ($price !== ($old === null ? null : (string) $old)) {
                     $changes[$column] = $price;
                 }
             }
@@ -94,7 +95,7 @@ return new class extends Migration
                     }
                 }
                 DB::table('price_history')->where('id', $entry->id)->delete();
-            } elseif ((string) $price !== (string) $entry->price) {
+            } elseif ($price !== (string) $entry->price) {
                 DB::table('price_history')->where('id', $entry->id)->update(['price' => $price]);
             }
         });
