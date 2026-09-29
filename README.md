@@ -66,7 +66,10 @@ The migration `2026_09_26_100000_improve_records_data_model` converts existing d
 - `sold_date` (text) becomes the date `sold_on`
 - the unused column `for_sale` is removed (a set value is carried over to `selling` first)
 
-Nothing is lost: if a value can not be converted exactly (e.g. "12.03.1974" or "ca. 70er"),
+The migration `2026_09_29_000000_store_prices_as_decimals` turns the prices (current, buy and sold price,
+price history) from text into numbers, e.g. "12,5" → 12.50 and "1.234,50 €" → 1234.50.
+
+Nothing is lost: if a value can not be converted exactly (e.g. "12.03.1974", "ca. 70er" or a price "ca. 20"),
 the original text is appended to the note of the record.
 
 ```

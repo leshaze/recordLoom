@@ -7,7 +7,6 @@ use App\Models\Label;
 use App\Models\Record;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Filters and sorting of the record list, taken from the query string.
@@ -124,7 +123,7 @@ class RecordFilter
             'title' => $query->orderBy('title', $dir),
             'label' => $query->orderBy(Label::select('name')->whereColumn('labels.id', 'records.label_id'), $dir)->orderBy('title'),
             'year' => $query->orderBy('release_year', $dir)->orderBy('title'),
-            'price' => $query->orderBy(DB::raw('current_price + 0'), $dir),
+            'price' => $query->orderBy('current_price', $dir),
             'grading' => $query->orderBy('grading_media', $dir)->orderBy('grading_cover', $dir),
             'created' => $query->orderBy('created_at', $dir)->orderBy('id', $dir),
         };
