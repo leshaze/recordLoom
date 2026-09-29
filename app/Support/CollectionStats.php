@@ -34,40 +34,54 @@ class CollectionStats
      */
     public static function valueByMonth(): array
     {
+        // Plain rows instead of models: casting dates and decimals for every record and month is far too slow
+        // on a Raspberry Pi. Dates are compared as text ("2026-03-15 10:00:00"), months as "2026-03".
         $records = Record::where('lost', false)
             ->where(fn (Builder $query) => $query->where('sold', false)->orWhereNotNull('sold_on'))
+            ->toBase()
             ->get(['id', 'created_at', 'sold', 'sold_on', 'current_price']);
 
         if ($records->isEmpty()) {
             return [];
         }
 
-        $history = PriceHistory::orderBy('created_at')->orderBy('id')
-            ->get(['record_id', 'price', 'created_at'])
-            ->groupBy('record_id');
+        $history = [];
+        foreach (PriceHistory::orderBy('created_at')->orderBy('id')->toBase()->cursor(['record_id', 'price', 'created_at']) as $entry) {
+            $history[$entry->record_id][] = [substr((string) $entry->created_at, 0, 7), (float) $entry->price];
+        }
 
-        $end = now()->endOfMonth();
-        $start = Carbon::parse($records->min('created_at'))->startOfMonth();
+        $end = now()->startOfMonth();
+        $first = $records->pluck('created_at')->filter()->min();
+        $start = $first ? Carbon::parse($first)->startOfMonth() : $end->copy();
         if ($start->diffInMonths($end) >= self::MONTHS) {
-            $start = $end->copy()->subMonths(self::MONTHS - 1)->startOfMonth();
+            $start = $end->copy()->subMonths(self::MONTHS - 1);
         }
 
         $months = [];
         for ($month = $start->copy(); $month <= $end; $month->addMonth()) {
-            $monthEnd = $month->copy()->endOfMonth();
-            $value = 0.0;
+            $months[] = $month->format('Y-m');
+        }
+        $values = array_fill(0, count($months), 0.0);
 
-            foreach ($records as $record) {
-                if ($record->created_at > $monthEnd || ($record->sold && $record->sold_on <= $monthEnd)) {
-                    continue;
+        foreach ($records as $record) {
+            $added = $record->created_at ? substr((string) $record->created_at, 0, 7) : '';
+            $sold = $record->sold && $record->sold_on ? substr((string) $record->sold_on, 0, 7) : null;
+            $entries = $history[$record->id] ?? [];
+            // Before the first entry of the price history the first known price counts.
+            $price = $entries ? $entries[0][1] : (float) $record->current_price;
+            $next = 0;
+
+            foreach ($months as $index => $month) {
+                while (isset($entries[$next]) && $entries[$next][0] <= $month) {
+                    $price = $entries[$next++][1];
                 }
-                $value += self::priceAt($record, $history->get($record->id), $monthEnd);
+                if ($added <= $month && ($sold === null || $sold > $month)) {
+                    $values[$index] += $price;
+                }
             }
-
-            $months[] = ['month' => $month->format('Y-m'), 'value' => round($value, 2)];
         }
 
-        return $months;
+        return array_map(fn (string $month, float $value) => ['month' => $month, 'value' => round($value, 2)], $months, $values);
     }
 
     /**
@@ -125,12 +139,13 @@ class CollectionStats
     {
         $years = [];
 
-        foreach (Record::get(['created_at', 'sold', 'sold_on', 'sold_price']) as $record) {
+        foreach (Record::toBase()->cursor(['created_at', 'sold', 'sold_on', 'sold_price']) as $record) {
             if ($record->created_at) {
-                $years[$record->created_at->year]['added'] = ($years[$record->created_at->year]['added'] ?? 0) + 1;
+                $year = (int) substr((string) $record->created_at, 0, 4);
+                $years[$year]['added'] = ($years[$year]['added'] ?? 0) + 1;
             }
             if ($record->sold && $record->sold_on) {
-                $year = $record->sold_on->year;
+                $year = (int) substr((string) $record->sold_on, 0, 4);
                 $years[$year]['sold'] = ($years[$year]['sold'] ?? 0) + 1;
                 $years[$year]['revenue'] = ($years[$year]['revenue'] ?? 0) + (float) $record->sold_price;
             }
@@ -144,25 +159,5 @@ class CollectionStats
             'sold' => $year['sold'] ?? 0,
             'revenue' => round($year['revenue'] ?? 0, 2),
         ])->values()->all();
-    }
-
-    /**
-     * @param  Collection<int, PriceHistory>|null  $history  sorted by date
-     */
-    private static function priceAt(Record $record, ?Collection $history, Carbon $date): float
-    {
-        if (! $history || $history->isEmpty()) {
-            return (float) $record->current_price;
-        }
-
-        $price = $history->first()->price; // Before the first entry the first known price counts.
-        foreach ($history as $entry) {
-            if ($entry->created_at > $date) {
-                break;
-            }
-            $price = $entry->price;
-        }
-
-        return (float) $price;
     }
 }
