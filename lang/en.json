@@ -468,5 +468,17 @@
     "Neues zu „:title“": "News about “:title”",
     "Alle Platten anzeigen": "Show all records",
     "Nur für Verkäufer: sieht alle Platten, die nicht verkauft sind, auch ohne Zuweisung und ohne „Zum Verkauf vormerken“, und kann Interesse anmelden.": "Sellers only: sees all records that are not sold, even without assignment and without “mark for selling”, and can register interest.",
-    "sieht alle Platten": "sees all records"
+    "sieht alle Platten": "sees all records",
+    "Summe der Preisvorschläge": "Sum of offers",
+    "kein Interesse": "no interest",
+    "Alle Verkäufer": "All sellers",
+    ":count Platte mit Interesse|:count Platten mit Interesse": ":count record with interest|:count records with interest",
+    "Preisvorschläge": "Offers",
+    ":name hat zurzeit kein Interesse an deinen Platten angemeldet.": ":name is currently not interested in any of your records.",
+    "Platte": "Record",
+    "Weitere Interessenten": "Other interested sellers",
+    "gleich hoch wie :name": "same as :name",
+    ":name bietet mehr: :price": ":name offers more: :price",
+    ":name bietet :price": ":name offers :price",
+    "Verkäufer (Liste)": "Sellers"
 }

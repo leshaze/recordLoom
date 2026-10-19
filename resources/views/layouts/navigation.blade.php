@@ -21,10 +21,11 @@
                     </li>
                 @else
                 <li class="nav-item dropdown">
-                    <a href="#" @class(['nav-link dropdown-toggle', 'active' => request()->routeIs('records.*', 'discogs.*')]) data-bs-toggle="dropdown">{{ __('Platten') }}</a>
+                    <a href="#" @class(['nav-link dropdown-toggle', 'active' => request()->routeIs('records.*', 'discogs.*', 'sellers.*')]) data-bs-toggle="dropdown">{{ __('Platten') }}</a>
                     <div class="dropdown-menu">
                         <a href="{{ route('records.index') }}" class="dropdown-item">{{ __('Alle Platten') }}</a>
                         <a href="{{ route('records.index', ['status' => 'selling']) }}" class="dropdown-item">{{ __('Zum Verkauf vorgemerkt') }}</a>
+                        <a href="{{ route('sellers.index') }}" class="dropdown-item">{{ __('Verkäufer & Interesse') }}</a>
                         <a href="{{ route('records.create') }}" class="dropdown-item"><i class="bi bi-plus-lg"></i> {{ __('Neue Platte') }}</a>
                         <div class="dropdown-divider"></div>
                         <a href="{{ route('records.print') }}" target="_blank" class="dropdown-item"><i class="bi bi-filetype-pdf"></i> {{ __('Verkaufsliste (PDF)') }}</a>

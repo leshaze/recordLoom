@@ -13,6 +13,7 @@ use App\Http\Controllers\RecordController;
 use App\Http\Controllers\RecordImportController;
 use App\Http\Controllers\RecordSaleController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SellerController;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Support\Facades\Route;
 
@@ -54,6 +55,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/records/{record}/sell', [RecordSaleController::class, 'sell'])->name('records.sell');
         Route::put('/records/{record}/selling', [RecordSaleController::class, 'selling'])->name('records.selling');
         Route::resource('records', RecordController::class)->except(['index', 'show']);
+        Route::get('/sellers', [SellerController::class, 'index'])->name('sellers.index');
+        Route::get('/sellers/{seller}', [SellerController::class, 'show'])->name('sellers.show');
 
         Route::get('/artists/{artist}/print', [ArtistController::class, 'print'])->name('artists.print');
         Route::get('/labels/{label}/print', [LabelController::class, 'print'])->name('labels.print');

@@ -409,3 +409,42 @@ test('admins let a seller see all records that are not sold', function () {
     $this->actingAs($admin)->put(route('admin.users.update', $eva), ['name' => $eva->name, 'email' => $eva->email, 'role' => 'seller']);
     expect($eva->fresh()->sees_all_records)->toBeFalse();
 });
+
+test('owners see the interest per seller on the dashboard and sell from the page of a seller', function () {
+    Notification::fake();
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    [$eva, $tom] = User::factory()->seller()->count(2)->sequence(['name' => 'Eva'], ['name' => 'Tom'])->create();
+    $first = ownedRecord($owner, ['title' => 'Autobahn', 'selling' => true, 'current_price' => '20']);
+    $second = ownedRecord($owner, ['title' => 'Radio-Aktivität', 'selling' => true]);
+    $third = ownedRecord($owner, ['title' => 'Ralf und Florian', 'selling' => true]);
+    $foreign = ownedRecord($other, ['title' => 'Fremde Platte', 'selling' => true]);
+
+    $this->actingAs($eva)->post(route('records.interest', $first), ['interested' => 1, 'offer_price' => '25']);
+    $this->actingAs($eva)->post(route('records.interest', $second), ['interested' => 1, 'offer_price' => '10']);
+    $this->actingAs($eva)->post(route('records.interest', $third), ['interested' => 1, 'offer_price' => '12']);
+    $this->actingAs($eva)->post(route('records.interest', $foreign), ['interested' => 1]);
+    $this->actingAs($tom)->post(route('records.interest', $first), ['interested' => 1, 'offer_price' => '22']);
+    $this->actingAs($tom)->post(route('records.interest', $second), ['interested' => 1, 'offer_price' => '15']);
+    $this->actingAs($tom)->post(route('records.interest', $third), ['interested' => 1, 'offer_price' => '12']);
+
+    // Dashboard: only the own records count.
+    $this->actingAs($owner)->get('/')->assertSeeInOrder(['Eva', '3 Platten', '47,00 €', 'Tom', '3 Platten', '49,00 €']);
+
+    // Page of Eva: highest offer, outbid and equal offers; the record of the other owner is missing.
+    $this->actingAs($owner)->get(route('sellers.show', $eva))->assertOk()
+        ->assertSee('Autobahn')->assertDontSee('Fremde Platte')
+        ->assertSee('höchstes Gebot')
+        ->assertSee('Tom bietet mehr: 15,00 €')
+        ->assertSee('gleich hoch wie Tom');
+
+    // Selling from the page goes back to it.
+    $this->actingAs($owner)->post(route('records.sell', $first), ['seller_id' => $eva->id, 'sold_price' => '25', 'sold_on' => '2026-10-21', 'from' => 'seller'])
+        ->assertRedirect(route('sellers.show', $eva));
+    expect($first->fresh()->sold_to_user_id)->toBe($eva->id);
+    $this->actingAs($owner)->get(route('sellers.show', $eva))->assertDontSee('Autobahn');
+
+    // Not for sellers, and only sellers have a page.
+    $this->actingAs($eva)->get(route('sellers.show', $tom))->assertForbidden();
+    $this->actingAs($owner)->get(route('sellers.show', $other))->assertNotFound();
+});

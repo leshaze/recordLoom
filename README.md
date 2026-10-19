@@ -28,7 +28,9 @@ or withdraw their interest, optionally with the price they offer. The owner sees
 the interested sellers (sale price and date): the record is marked as sold, the buyer and all other interested
 sellers are notified. Switching "Zum Verkauf vormerken" off deletes all interest and offers and tells the
 interested sellers that the record is no longer for sale. The owner is notified when a seller registers or
-withdraws interest or changes the offer.
+withdraws interest or changes the offer. The dashboard tile "Verkäufer" (and *Platten → Verkäufer & Interesse*)
+lists the sellers with the number of records they are interested in; the page of a seller shows these records with
+the offers, marks where another seller offers more, and sells directly.
 
 Notifications always appear in the app (bell). Each user decides in the profile whether they also come by e-mail
 (on by default).

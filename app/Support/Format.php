@@ -27,6 +27,18 @@ class Format
     }
 
     /**
+     * A price for an input field: "12,50" in German, "12.50" in English, empty for no price.
+     */
+    public static function input(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        return str_replace('.', App::getLocale() === 'de' ? ',' : '.', (string) $value);
+    }
+
+    /**
      * "24.12.2025" in German, "2025-12-24" in English.
      */
     public static function date(?DateTimeInterface $date): string

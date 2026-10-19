@@ -148,7 +148,9 @@ class RecordSaleController extends Controller
             $mailFailed = ! $this->notify($seller, new RecordSold($record, $seller->is($buyer))) || $mailFailed;
         }
 
-        return redirect()->route('records.show', $record)
+        $redirect = $request->input('from') === 'seller' ? redirect()->route('sellers.show', $buyer) : redirect()->route('records.show', $record);
+
+        return $redirect
             ->with('info', __('Die Platte wurde an :name verkauft. Alle Interessenten wurden benachrichtigt.', ['name' => $buyer->name]))
             ->with('warning', $mailFailed ? __('Die Benachrichtigung steht in der App, die E-Mail konnte aber nicht verschickt werden.') : null);
     }

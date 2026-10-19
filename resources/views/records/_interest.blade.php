@@ -1,7 +1,4 @@
 {{-- Seller: register interest with an optional offer, change the offer, or withdraw the interest. --}}
-@php
-    $decimal = fn ($value) => $value !== null ? str_replace('.', app()->getLocale() === 'de' ? ',' : '.', $value) : '';
-@endphp
 <div class="card mb-3 border-warning-subtle">
     <div class="card-header"><i class="bi bi-star"></i> {{ __('Dein Interesse') }}</div>
     <div class="card-body">
@@ -27,7 +24,7 @@
                 <div class="d-flex flex-wrap gap-2">
                     <div class="input-group" style="max-width: 12rem">
                         <input type="text" inputmode="decimal" name="offer_price" id="offer_price" class="form-control @error('offer_price') is-invalid @enderror"
-                            value="{{ old('offer_price', $decimal($assignment->offer_price)) }}">
+                            value="{{ old('offer_price', \App\Support\Format::input($assignment->offer_price)) }}">
                         <span class="input-group-text">€</span>
                     </div>
                     <button type="submit" class="btn btn-sm btn-outline-primary">{{ __('Preisvorschlag speichern') }}</button>

@@ -1,6 +1,5 @@
 {{-- Owner and admin: sellers the record is assigned to, their interest and offers, and selling to one of them. --}}
 @php
-    $decimal = fn ($value) => $value !== null ? str_replace('.', app()->getLocale() === 'de' ? ',' : '.', $value) : '';
     // The highest offer is marked when more than one seller made an offer.
     $offers = $sellers->filter(fn ($seller) => $seller->pivot->interested_at && $seller->pivot->offer_price !== null);
     $bestOffer = $offers->count() > 1 ? $offers->max(fn ($seller) => (float) $seller->pivot->offer_price) : null;
@@ -41,7 +40,7 @@
             <ul class="list-group mb-3">
                 @foreach ($sellers as $seller)
                     <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
-                        <span class="fw-semibold">{{ $seller->name }}</span>
+                        <a href="{{ route('sellers.show', $seller) }}" class="fw-semibold">{{ $seller->name }}</a>
                         @unless ($seller->pivot->assigned)
                             <span class="small text-body-secondary">({{ __('nicht zugewiesen') }})</span>
                         @endunless
@@ -65,7 +64,7 @@
                             <span class="badge text-bg-success">{{ __('Käufer') }}</span>
                         @endif
                         @if (! $record->sold && $seller->pivot->interested_at)
-                            <button type="button" class="btn btn-sm btn-success ms-auto" data-bs-toggle="modal" data-bs-target="#sell-modal-{{ $seller->id }}">
+                            <button type="button" class="btn btn-sm btn-success ms-auto" data-bs-toggle="modal" data-bs-target="#sell-modal-{{ $record->id }}-{{ $seller->id }}">
                                 <i class="bi bi-bag-check"></i> {{ __('Verkaufen an :name', ['name' => $seller->name]) }}
                             </button>
                         @endif
@@ -101,45 +100,6 @@
 
 @if (! $record->sold)
     @foreach ($sellers->filter(fn ($seller) => $seller->pivot->interested_at) as $seller)
-        <div class="modal fade" id="sell-modal-{{ $seller->id }}" tabindex="-1" aria-labelledby="sell-modal-{{ $seller->id }}-title" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <form method="POST" action="{{ route('records.sell', $record) }}" class="modal-content">
-                    @csrf
-                    <input type="hidden" name="seller_id" value="{{ $seller->id }}">
-                    <div class="modal-header">
-                        <h2 class="modal-title fs-5" id="sell-modal-{{ $seller->id }}-title">{{ __('Verkaufen an :name', ['name' => $seller->name]) }}</h2>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Schließen') }}"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <label for="sold_price-{{ $seller->id }}" class="form-label">{{ __('Verkaufspreis') }}</label>
-                                <div class="input-group">
-                                    <input type="text" inputmode="decimal" name="sold_price" id="sold_price-{{ $seller->id }}" class="form-control"
-                                        value="{{ $decimal($seller->pivot->offer_price ?? $record->current_price) }}">
-                                    <span class="input-group-text">€</span>
-                                </div>
-                                <div class="form-text">{{ $seller->pivot->offer_price !== null ? __('Preisvorschlag von :name', ['name' => $seller->name]) : __('Aktueller Preis') }}</div>
-                            </div>
-                            <div class="col-6">
-                                <label for="sold_on-{{ $seller->id }}" class="form-label">{{ __('Verkaufsdatum') }}</label>
-                                <input type="date" name="sold_on" id="sold_on-{{ $seller->id }}" class="form-control" required value="{{ now()->toDateString() }}">
-                            </div>
-                        </div>
-                        @php $others = $sellers->filter(fn ($other) => $other->pivot->interested_at && $other->id !== $seller->id); @endphp
-                        <p class="small text-body-secondary mt-3 mb-0">
-                            {{ __('Die Platte wird als verkauft markiert und :name benachrichtigt.', ['name' => $seller->name]) }}
-                            @if ($others->isNotEmpty())
-                                {{ __('Diese Interessenten erfahren, dass sie die Platte nicht bekommen: :names.', ['names' => $others->pluck('name')->implode(', ')]) }}
-                            @endif
-                        </p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Abbrechen') }}</button>
-                        <button type="submit" class="btn btn-success"><i class="bi bi-bag-check"></i> {{ __('Verkaufen') }}</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        @include('records._sell-modal', ['others' => $sellers->filter(fn ($other) => $other->pivot->interested_at && $other->id !== $seller->id)])
     @endforeach
 @endif

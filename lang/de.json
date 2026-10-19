@@ -62,5 +62,7 @@
     "Zusatzinfo „:name“ löschen? Sie wird bei :count Platte entfernt, die Platte selbst bleibt erhalten.|Zusatzinfo „:name“ löschen? Sie wird bei :count Platten entfernt, die Platten selbst bleiben erhalten.": "Zusatzinfo „:name“ löschen? Sie wird bei :count Platte entfernt, die Platte selbst bleibt erhalten.|Zusatzinfo „:name“ löschen? Sie wird bei :count Platten entfernt, die Platten selbst bleiben erhalten.",
     "of": "von",
     "results": "Einträgen",
-    "to": "bis"
+    "to": "bis",
+    ":count Platte mit Interesse|:count Platten mit Interesse": ":count Platte mit Interesse|:count Platten mit Interesse",
+    "Verkäufer (Liste)": "Verkäufer"
 }

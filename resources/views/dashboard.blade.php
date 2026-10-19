@@ -110,6 +110,18 @@
                 </div>
             </div>
 
+            @if ($sellers->isNotEmpty())
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>{{ __('Verkäufer (Liste)') }}</span>
+                            <a href="{{ route('sellers.index') }}" class="small">{{ __('Alle anzeigen') }}</a>
+                        </div>
+                        @include('sellers._list', ['sellers' => $sellers->take(8)])
+                    </div>
+                </div>
+            @endif
+
             @foreach ([[__('Top 5 Künstler nach Wert'), $top_artists, 'artists'], [__('Top 5 Labels nach Wert'), $top_labels, 'labels']] as [$heading, $items, $resource])
                 <div class="col">
                     <div class="card h-100">

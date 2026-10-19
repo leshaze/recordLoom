@@ -47,6 +47,7 @@ class DashboardController extends Controller
             'gradings' => CollectionStats::gradings(),
             'years' => CollectionStats::years(),
             'balance' => CollectionStats::balance(),
+            'sellers' => SellerController::withInterest($user)->get(),
         ]);
     }
 }
