@@ -251,10 +251,14 @@
     <div class="card-header">{{ __('Verkauf') }}</div>
     <div class="card-body"><div class="row g-3 mb-0">
         <div class="col-12">
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" id="selling" name="selling" value="1" @checked(old('selling', $record->selling))>
-                <label class="form-check-label" for="selling">{{ __('Zum Verkauf vormerken') }}</label>
-            </div>
+            @if ($isNew)
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="selling" name="selling" value="1" @checked(old('selling', $record->selling))>
+                    <label class="form-check-label" for="selling">{{ __('Zum Verkauf vormerken') }} <span class="small text-body-secondary">({{ __('für alle Verkäufer sichtbar') }})</span></label>
+                </div>
+            @else
+                <p class="small text-body-secondary w-100 mb-2">{{ __('„Zum Verkauf vormerken“ und die Verkäufer stellst du auf der Seite der Platte unter „Verkäufer & Interesse“ ein.') }}</p>
+            @endif
             @unless ($isNew)
                 <div class="form-check form-check-inline">
                     <input class="form-check-input" type="checkbox" id="sold" name="sold" value="1" @checked($sold)>

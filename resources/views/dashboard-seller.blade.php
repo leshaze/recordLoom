@@ -4,7 +4,7 @@
 
         <div class="row row-cols-1 row-cols-sm-3 g-3 mb-4">
             @foreach ([
-                [__('Zugewiesen, noch offen'), $open->count(), 'bi-vinyl', route('records.index', ['status' => 'available'])],
+                [__('Für dich verfügbar'), $open->count(), 'bi-vinyl', route('records.index', ['status' => 'available'])],
                 [__('Mit deinem Interesse'), $interested, 'bi-star-fill', null],
                 [__('An dich verkauft'), $bought->count(), 'bi-bag-check', route('records.index', ['status' => 'sold'])],
             ] as [$label, $value, $icon, $url])
@@ -26,11 +26,11 @@
             <div class="col-lg-8">
                 <div class="card h-100">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>{{ __('Dir zugewiesene Platten, noch nicht verkauft') }}</span>
+                        <span>{{ __('Für dich verfügbare Platten') }}</span>
                         <a href="{{ route('records.index') }}" class="small">{{ __('Alle anzeigen') }}</a>
                     </div>
                     @if ($open->isEmpty())
-                        <div class="card-body text-body-secondary">{{ __('Zurzeit sind dir keine offenen Platten zugewiesen.') }}</div>
+                        <div class="card-body text-body-secondary">{{ __('Zurzeit sind keine Platten für dich verfügbar.') }}</div>
                     @else
                         <div class="list-group list-group-flush">
                             @foreach ($open->take(10) as $record)
@@ -40,7 +40,10 @@
                                         <div class="fw-semibold text-truncate">{{ $record->title }}</div>
                                         <div class="small text-body-secondary text-truncate">{{ $record->artist->name }} · {{ $record->kind }}</div>
                                     </div>
-                                    @if ($record->pivot->interested_at)
+                                    @if ($record->selling)
+                                        <span class="badge text-bg-info">{{ __('Verkauf') }}</span>
+                                    @endif
+                                    @if ($record->sellers->first()?->pivot->interested_at)
                                         <span class="badge text-bg-warning"><i class="bi bi-star-fill"></i> {{ __('Interesse angemeldet') }}</span>
                                     @endif
                                     @if (filled($record->current_price))

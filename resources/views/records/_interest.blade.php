@@ -11,7 +11,7 @@
         @else
             <form method="POST" action="{{ route('records.interest', $record) }}" class="d-flex flex-wrap align-items-center gap-2">
                 @csrf
-                @if ($assignment->interested_at)
+                @if ($assignment?->interested_at)
                     <input type="hidden" name="interested" value="0">
                     <span><i class="bi bi-star-fill text-warning"></i> {{ __('Du hast am :date Interesse angemeldet.', ['date' => \App\Support\Format::date($assignment->interested_at)]) }}</span>
                     <button type="submit" class="btn btn-sm btn-outline-secondary ms-auto">{{ __('Interesse zurücknehmen') }}</button>

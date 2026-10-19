@@ -15,11 +15,15 @@ class DashboardController extends Controller
         $user = $request->user();
 
         if ($user->isSeller()) {
-            $records = $user->assignedRecords()->with(['artist', 'label', 'editions'])->orderByDesc('record_seller.created_at')->get();
+            // Assigned records and all records marked for selling, with the seller's own interest.
+            $records = Record::visible()
+                ->with(['artist', 'label', 'editions', 'sellers' => fn ($query) => $query->whereKey($user->id)])
+                ->latest()->latest('id')->get();
+            $interest = fn (Record $record) => $record->sellers->first()?->pivot->interested_at;
 
             return view('dashboard-seller', [
                 'open' => $records->where('sold', false),
-                'interested' => $records->where('sold', false)->whereNotNull('pivot.interested_at')->count(),
+                'interested' => $records->where('sold', false)->filter($interest)->count(),
                 'bought' => $records->where('sold_to_user_id', $user->id),
                 'notifications' => $user->notifications()->latest()->take(5)->get(),
             ]);

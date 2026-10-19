@@ -74,11 +74,12 @@ class Record extends Model
     }
 
     /**
-     * Sellers the record is assigned to, with the time they registered interest (null = no interest).
+     * Sellers the record is assigned to (assigned = true) or who registered interest because it is marked
+     * for selling (assigned = false), with the time of their interest (null = no interest).
      */
     public function sellers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'record_seller')->using(RecordSeller::class)->withPivot('interested_at')->withTimestamps()->orderBy('name');
+        return $this->belongsToMany(User::class, 'record_seller')->using(RecordSeller::class)->withPivot('interested_at', 'assigned')->withTimestamps()->orderBy('name');
     }
 
     /**
@@ -98,14 +99,17 @@ class Record extends Model
     }
 
     /**
-     * Records a user may see: admins all, users their own collection, sellers the records assigned to them.
+     * Records a user may see: admins all, users their own collection, sellers the records assigned to them,
+     * all records marked for selling and the records they registered interest in.
      */
     public function scopeVisibleTo(Builder $query, ?User $user): Builder
     {
         return match (true) {
             $user === null => $query->whereRaw('1 = 0'),
             $user->isAdmin() => $query,
-            $user->isSeller() => $query->whereHas('sellers', fn (Builder $query) => $query->whereKey($user->id)),
+            $user->isSeller() => $query->where(fn (Builder $query) => $query
+                ->whereHas('sellers', fn (Builder $query) => $query->whereKey($user->id))
+                ->orWhere(fn (Builder $query) => $query->where('records.selling', true)->where('records.sold', false))),
             default => $query->where('records.user_id', $user->id),
         };
     }

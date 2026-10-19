@@ -82,6 +82,6 @@ class User extends Authenticatable
      */
     public function assignedRecords(): BelongsToMany
     {
-        return $this->belongsToMany(Record::class, 'record_seller')->using(RecordSeller::class)->withPivot('interested_at')->withTimestamps();
+        return $this->belongsToMany(Record::class, 'record_seller')->using(RecordSeller::class)->withPivot('interested_at', 'assigned')->withTimestamps();
     }
 }

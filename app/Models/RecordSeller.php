@@ -15,6 +15,7 @@ class RecordSeller extends Pivot
     {
         return [
             'interested_at' => 'datetime',
+            'assigned' => 'boolean',
         ];
     }
 }

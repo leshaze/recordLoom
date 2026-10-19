@@ -2,18 +2,40 @@
 <div class="card mb-3 border-warning-subtle">
     <div class="card-header"><i class="bi bi-people"></i> {{ __('Verkäufer & Interesse') }}</div>
     <div class="card-body">
+        @unless ($record->sold)
+            <form method="POST" action="{{ route('records.selling', $record) }}" class="mb-3">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="selling" value="0">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" name="selling" value="1" id="selling-switch"
+                        @checked($record->selling) data-auto-submit>
+                    <label class="form-check-label" for="selling-switch">
+                        {{ __('Zum Verkauf vormerken') }}
+                        <span class="small text-body-secondary d-block">{{ __('Die Platte ist dann für alle Verkäufer sichtbar und jeder kann Interesse anmelden.') }}</span>
+                    </label>
+                </div>
+                <noscript><button type="submit" class="btn btn-sm btn-outline-primary mt-2">{{ __('Speichern') }}</button></noscript>
+            </form>
+        @endunless
+
         @if ($record->sold && $record->soldToUser)
             <p class="mb-2 text-success"><i class="bi bi-bag-check"></i>
                 {{ __('An :name verkauft am :date.', ['name' => $record->soldToUser->name, 'date' => \App\Support\Format::date($record->sold_on)]) }}</p>
         @endif
 
         @if ($sellers->isEmpty())
-            <p class="text-body-secondary mb-2">{{ __('Die Platte ist noch keinem Verkäufer zugewiesen.') }}</p>
+            <p class="text-body-secondary mb-2">
+                {{ $record->selling && ! $record->sold ? __('Noch kein Verkäufer hat Interesse angemeldet.') : __('Die Platte ist noch keinem Verkäufer zugewiesen.') }}
+            </p>
         @else
             <ul class="list-group mb-3">
                 @foreach ($sellers as $seller)
                     <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                         <span class="fw-semibold">{{ $seller->name }}</span>
+                        @unless ($seller->pivot->assigned)
+                            <span class="small text-body-secondary">({{ __('über „Zum Verkauf“') }})</span>
+                        @endunless
                         @if ($seller->pivot->interested_at)
                             <span class="badge text-bg-warning"><i class="bi bi-star-fill"></i>
                                 {{ __('Interesse seit :date', ['date' => \App\Support\Format::date($seller->pivot->interested_at)]) }}</span>
@@ -36,8 +58,9 @@
         @if ($availableSellers->isEmpty())
             <p class="small text-body-secondary mb-0">{{ __('Es gibt noch keine Verkäufer. Ein Admin kann sie unter „Verwaltung → Benutzer“ einladen.') }}</p>
         @else
-            <details @if ($sellers->isEmpty()) open @endif>
-                <summary class="small">{{ __('Verkäufer zuweisen') }}</summary>
+            <details @if ($sellers->isEmpty() && ! $record->selling) open @endif>
+                <summary class="small">{{ __('Verkäufer gezielt zuweisen') }}</summary>
+                <p class="small text-body-secondary mt-2 mb-0">{{ __('Zugewiesene Verkäufer sehen die Platte auch, wenn sie nicht zum Verkauf vorgemerkt ist.') }}</p>
                 <form method="POST" action="{{ route('records.sellers', $record) }}" class="mt-2">
                     @csrf
                     @method('PUT')
@@ -45,7 +68,7 @@
                         @foreach ($availableSellers as $seller)
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="sellers[]" value="{{ $seller->id }}" id="seller-{{ $seller->id }}"
-                                    @checked($sellers->contains('id', $seller->id))>
+                                    @checked($sellers->contains(fn ($assigned) => $assigned->id === $seller->id && $assigned->pivot->assigned))>
                                 <label class="form-check-label" for="seller-{{ $seller->id }}">{{ $seller->name }}</label>
                             </div>
                         @endforeach

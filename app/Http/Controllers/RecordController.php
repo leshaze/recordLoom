@@ -118,6 +118,7 @@ class RecordController extends Controller
             // Sellers: assigned ones with their interest (owner), or the own assignment (seller).
             'sellers' => $canEdit ? $record->sellers()->get() : collect(),
             'availableSellers' => $canEdit ? User::where('role', Role::Seller)->orderBy('name')->get(['id', 'name']) : collect(),
+            // Sellers: their own assignment or interest (null when the record is only marked for selling).
             'assignment' => $user->isSeller() ? $record->sellers()->whereKey($user->id)->first()?->pivot : null,
             'navigation' => $this->navigation($request, $record),
         ]);
@@ -175,7 +176,7 @@ class RecordController extends Controller
     {
         $data = [
             ...$request->validated(),
-            'selling' => $request->boolean('selling'),
+            // "Zum Verkauf vormerken" is set on the page of the record (RecordSaleController::selling).
             'sold' => $request->boolean('sold'),
             'lost' => $request->boolean('lost'),
         ];

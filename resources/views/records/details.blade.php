@@ -127,7 +127,7 @@
 
                 @if ($canEdit)
                     @include('records._sellers')
-                @elseif ($assignment)
+                @elseif (auth()->user()->isSeller())
                     @include('records._interest')
                 @endif
 

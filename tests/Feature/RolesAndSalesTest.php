@@ -84,7 +84,7 @@ test('sellers only see assigned records without buy price and note', function ()
     $this->get(route('records.edit', $assigned))->assertForbidden();
     $this->get(route('records.create'))->assertForbidden();
     $this->get(route('artists.index'))->assertForbidden();
-    $this->get('/')->assertOk()->assertSee('Dir zugewiesene Platten, noch nicht verkauft')->assertSee('Zugewiesen');
+    $this->get('/')->assertOk()->assertSee('Für dich verfügbare Platten')->assertSee('Zugewiesen');
 });
 
 test('the owner assigns sellers, sellers register interest and the owner sells to one of them', function () {
@@ -204,4 +204,69 @@ test('forgot password does not reveal whether an address exists', function () {
 
     $this->post(route('password.email'), ['email' => 'niemand@example.com'])
         ->assertSessionHasNoErrors()->assertSessionHas('status');
+});
+
+test('records marked for selling are visible to all sellers, who can register interest', function () {
+    Notification::fake();
+    $owner = User::factory()->create();
+    [$eva, $tom] = User::factory()->seller()->count(2)->sequence(['name' => 'Eva'], ['name' => 'Tom'])->create();
+    $record = ownedRecord($owner, ['title' => 'Computerwelt']);
+    $assigned = ownedRecord($owner, ['title' => 'Nur für Tom']);
+    $assigned->sellers()->attach($tom);
+
+    // Not marked for selling: only assigned sellers see it.
+    $this->actingAs($eva)->get(route('records.show', $record))->assertForbidden();
+
+    // The owner switches "Zum Verkauf vormerken" on the page of the record.
+    $this->actingAs($owner)->get(route('records.show', $record))->assertSee('Zum Verkauf vormerken')->assertSee('id="selling-switch"', false);
+    $this->actingAs($owner)->put(route('records.selling', $record), ['selling' => '1'])->assertSessionHas('info');
+    expect($record->fresh()->selling)->toBeTrue();
+
+    // Now every seller sees it; Eva does not see the record that is only assigned to Tom.
+    $this->actingAs($eva)->get(route('records.index'))->assertSee('Computerwelt')->assertDontSee('Nur für Tom');
+    $this->actingAs($eva)->get('/')->assertSee('Computerwelt');
+    $this->actingAs($eva)->get(route('records.show', $record))->assertOk()->assertSee('Interesse anmelden');
+
+    // Interest without assignment; the owner sees it and can sell.
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 1])->assertSessionHas('info');
+    $pivot = $record->sellers()->whereKey($eva->id)->first()->pivot;
+    expect($pivot->assigned)->toBeFalse()->and($pivot->interested_at)->not->toBeNull();
+    $this->actingAs($owner)->get(route('records.show', $record))->assertSee('Verkaufen an Eva')->assertSee('über „Zum Verkauf“');
+
+    // Withdrawing removes the row again.
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 0]);
+    expect($record->sellers()->count())->toBe(0);
+
+    // Switched off: Eva no longer sees it, Tom still sees his assigned record.
+    $this->actingAs($owner)->put(route('records.selling', $record), ['selling' => '0']);
+    $this->actingAs($eva)->get(route('records.show', $record))->assertForbidden();
+    $this->actingAs($tom)->get(route('records.show', $assigned))->assertOk();
+
+    // Sold records can not be marked for selling again.
+    $this->actingAs($owner)->put(route('records.selling', $record), ['selling' => '1']);
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 1]);
+    $this->actingAs($owner)->post(route('records.sell', $record), ['seller_id' => $eva->id, 'sold_on' => '2026-10-21'])->assertSessionHas('info');
+    expect($record->fresh()->selling)->toBeFalse();
+    $this->actingAs($owner)->put(route('records.selling', $record), ['selling' => '1'])->assertStatus(422);
+
+    // The buyer keeps seeing the record, the others not.
+    $this->actingAs($eva)->get(route('records.show', $record))->assertOk()->assertSee('an dich verkauft');
+    $this->actingAs($tom)->get(route('records.show', $record))->assertForbidden();
+});
+
+test('unassigning keeps a registered interest, the edit form does not change "for selling"', function () {
+    $owner = User::factory()->create();
+    [$eva, $tom] = User::factory()->seller()->count(2)->create();
+    $record = ownedRecord($owner, ['selling' => true]);
+
+    $this->actingAs($owner)->put(route('records.sellers', $record), ['sellers' => [$eva->id, $tom->id]]);
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 1]);
+    $this->actingAs($owner)->put(route('records.sellers', $record), ['sellers' => []]);
+
+    expect($record->sellers()->pluck('users.id')->all())->toBe([$eva->id])
+        ->and($record->sellers()->first()->pivot->assigned)->toBeFalse();
+
+    $this->actingAs($owner)->put(route('records.update', $record), ['kind' => 'LP', 'title' => 'Autobahn', 'artist_name' => 'Kraftwerk', 'label_name' => 'Kling Klang'])
+        ->assertRedirect(route('records.show', $record));
+    expect($record->fresh()->selling)->toBeTrue();
 });

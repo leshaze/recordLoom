@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function () {
             ->name('autocomplete');
         Route::put('/records/{record}/sellers', [RecordSaleController::class, 'sellers'])->name('records.sellers');
         Route::post('/records/{record}/sell', [RecordSaleController::class, 'sell'])->name('records.sell');
+        Route::put('/records/{record}/selling', [RecordSaleController::class, 'selling'])->name('records.selling');
         Route::resource('records', RecordController::class)->except(['index', 'show']);
 
         Route::get('/artists/{artist}/print', [ArtistController::class, 'print'])->name('artists.print');
