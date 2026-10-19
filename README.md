@@ -83,6 +83,29 @@ php artisan optimize:clear
 php artisan up
 ```
 
+### Ablauf auf dem Pi um ein Datenbank-Backup einzuspielen
+```
+cd /var/www/recordLoom
+sudo -u www-data php artisan down
+
+# 1. Aktuelle Datenbank sichern
+sudo cp database/database.sqlite /var/backups/recordloom/vor-altimport-$(date +%F).sqlite
+
+# 2. Alte Datenbank einsetzen (Pfad anpassen)
+sudo cp /pfad/zur/alten.sqlite database/database.sqlite
+sudo chown www-data:www-data database/database.sqlite
+
+# 3. Prüfen: die 2026_*-Migrationen müssen als "Pending" erscheinen
+sudo -u www-data php artisan migrate:status
+
+# 4. Migrieren
+sudo -u www-data php artisan migrate --force
+
+# 5. Caches neu aufbauen und wieder online gehen
+sudo -u www-data php artisan optimize
+sudo -u www-data php artisan up
+```
+
 ### Languages
 
 The app is available in German and English. The language follows the browser; it can be switched
