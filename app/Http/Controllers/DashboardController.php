@@ -28,6 +28,7 @@ class DashboardController extends Controller
             'top_labels' => CollectionStats::top(Label::class),
             'gradings' => CollectionStats::gradings(),
             'years' => CollectionStats::years(),
+            'balance' => CollectionStats::balance(),
         ]);
     }
 }

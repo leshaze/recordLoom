@@ -75,7 +75,41 @@
             </div>
         </div>
 
-        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header">{{ __('Bilanz') }}</div>
+                    <div class="card-body small">
+                        @foreach ([
+                            [__('Im Bestand'), $balance['stock'], __('Investiert'), __('Aktueller Wert'), __('Wertzuwachs')],
+                            [__('Verkauft'), $balance['sold'], __('Einkauf'), __('Erlös'), __('Gewinn')],
+                        ] as [$heading, $part, $costLabel, $valueLabel, $changeLabel])
+                            <div @class(['mb-3' => $loop->first])>
+                                <div class="fw-semibold mb-1">{{ $heading }}
+                                    <span class="fw-normal text-body-secondary">· {{ trans_choice(':count Platte mit Kaufpreis|:count Platten mit Kaufpreis', $part['count']) }}</span></div>
+                                @if ($part['count'] > 0)
+                                    <dl class="row mb-0">
+                                        <dt class="col-6 fw-normal text-body-secondary">{{ $costLabel }}</dt>
+                                        <dd class="col-6 text-end mb-0">{{ \App\Support\Format::euro($part['cost']) }}</dd>
+                                        <dt class="col-6 fw-normal text-body-secondary">{{ $valueLabel }}</dt>
+                                        <dd class="col-6 text-end mb-0">{{ \App\Support\Format::euro($part['value']) }}</dd>
+                                        <dt class="col-6 fw-normal text-body-secondary">{{ $changeLabel }}</dt>
+                                        <dd class="col-6 text-end mb-0 fw-semibold"><x-value-change :change="$part['change']" /></dd>
+                                    </dl>
+                                @else
+                                    <div class="text-body-secondary">{{ __('Keine Platten mit Kaufpreis.') }}</div>
+                                @endif
+                            </div>
+                        @endforeach
+                        @if ($balance['without_buy_price'] > 0)
+                            <p class="text-body-secondary mt-3 mb-0">
+                                {{ trans_choice(':count Platte im Bestand ohne Kaufpreis ist nicht berücksichtigt.|:count Platten im Bestand ohne Kaufpreis sind nicht berücksichtigt.', $balance['without_buy_price']) }}
+                            </p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
             @foreach ([[__('Top 5 Künstler nach Wert'), $top_artists, 'artists'], [__('Top 5 Labels nach Wert'), $top_labels, 'labels']] as [$heading, $items, $resource])
                 <div class="col">
                     <div class="card h-100">

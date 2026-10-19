@@ -12,6 +12,7 @@ use App\Models\Record;
 use App\Services\Discogs\DiscogsClient;
 use App\Services\Discogs\DiscogsCovers;
 use App\Support\CoverStorage;
+use App\Support\DuplicateRecords;
 use App\Support\RecordCsv;
 use App\Support\RecordFilter;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -63,10 +64,12 @@ class RecordController extends Controller
     /**
      * The old "For Selling" page is now a filter of the record list.
      */
-    public function create()
+    public function create(Request $request)
     {
         return view('records.create', [
             'record' => new Record,
+            // After saving was stopped because of possible duplicates (the form data is in the old input).
+            'duplicates' => $request->session()->has('duplicates') ? DuplicateRecords::find($request->old()) : collect(),
             'editions' => Edition::orderBy('name')->get(),
             'discogsConfigured' => app(DiscogsClient::class)->isConfigured(),
             // From "not in the collection" after scanning: search this barcode on Discogs right away.
@@ -76,6 +79,13 @@ class RecordController extends Controller
 
     public function store(StoreRecordRequest $request, SaveRecord $saveRecord, DiscogsCovers $covers)
     {
+        // Possible duplicates are only saved after the checkbox "save anyway" was ticked.
+        if (! $request->boolean('confirm_duplicate') && DuplicateRecords::find($request->validated())->isNotEmpty()) {
+            return redirect()->route('records.create')->withInput()->with('duplicates', true)->with('error', $request->hasFile('cover')
+                ? __('Diese Platte ist vielleicht schon in deiner Sammlung. Bitte prüfen und das Cover erneut auswählen.')
+                : __('Diese Platte ist vielleicht schon in deiner Sammlung. Bitte prüfen.'));
+        }
+
         $data = [...$request->validated(), 'selling' => $request->boolean('selling')];
         $record = $saveRecord(new Record, $data, $request->file('cover'));
         $warning = $this->coverFromDiscogs($request, $record, $covers);
@@ -94,6 +104,18 @@ class RecordController extends Controller
             'record' => $record,
             'prices' => $prices,
             'navigation' => $this->navigation($request, $record),
+        ]);
+    }
+
+    /**
+     * Possible duplicates of the record that is being entered (checked by the form while typing).
+     */
+    public function duplicates(Request $request)
+    {
+        $data = $request->only(['barcode', 'catalog_number', 'label_name', 'discogs_release_id']);
+
+        return response()->json([
+            'html' => view('records._duplicates', ['duplicates' => DuplicateRecords::find(array_map(fn ($value) => is_string($value) ? $value : null, $data))])->render(),
         ]);
     }
 

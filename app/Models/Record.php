@@ -62,6 +62,33 @@ class Record extends Model
         return $this->belongsToMany(Edition::class)->orderBy('name');
     }
 
+    /**
+     * Change of the value since buying: current price minus buy price (records in stock),
+     * sale price minus buy price (sold records). Null when one of the prices is missing.
+     *
+     * @return array{amount: float, percent: ?float}|null
+     */
+    public function valueChange(): ?array
+    {
+        $value = $this->sold ? $this->sold_price : $this->current_price;
+        if ($value === null || $this->buy_price === null) {
+            return null;
+        }
+
+        return self::change((float) $this->buy_price, (float) $value);
+    }
+
+    /**
+     * @return array{amount: float, percent: ?float}
+     */
+    public static function change(float $from, float $to): array
+    {
+        return [
+            'amount' => round($to - $from, 2),
+            'percent' => $from > 0 ? round(($to - $from) / $from * 100, 1) : null,
+        ];
+    }
+
     public function discogsUrl(): ?string
     {
         return $this->discogs_release_id ? ReleaseMapper::releaseUrl($this->discogs_release_id) : null;

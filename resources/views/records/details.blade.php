@@ -46,7 +46,8 @@
             {{-- Summary next to the cover on phones; on larger screens the cards below show it --}}
             <div class="col-7 d-md-none small">
                 <div class="text-body-secondary">{{ __('Aktueller Preis') }}</div>
-                <div class="fs-5 fw-semibold mb-2">{{ \App\Support\Format::euro($record->current_price) ?: '–' }}</div>
+                <div class="fs-5 fw-semibold">{{ \App\Support\Format::euro($record->current_price) ?: '–' }}</div>
+                <div class="mb-2"><x-value-change :change="$record->sold ? null : $record->valueChange()" /></div>
                 @if ($record->gradingMedia() || $record->gradingCover())
                     <div class="mb-2">
                         <span class="text-body-secondary">{{ __('M') }}</span> <x-grading-badge :grading="$record->gradingMedia()" />
@@ -100,6 +101,10 @@
                         <dd class="col-7 col-sm-9">{{ \App\Support\Format::euro($record->current_price) ?: '–' }}</dd>
                         <dt class="col-5 col-sm-3 fw-normal text-body-secondary">{{ __('Kaufpreis') }}</dt>
                         <dd class="col-7 col-sm-9">{{ \App\Support\Format::euro($record->buy_price) ?: '–' }}</dd>
+                        @if (! $record->sold && $record->valueChange())
+                            <dt class="col-5 col-sm-3 fw-normal text-body-secondary">{{ __('Wertentwicklung') }}</dt>
+                            <dd class="col-7 col-sm-9"><x-value-change :change="$record->valueChange()" /> <span class="small text-body-secondary">{{ __('seit dem Kauf') }}</span></dd>
+                        @endif
                         <dt class="col-5 col-sm-3 fw-normal text-body-secondary">{{ __('Anbieter') }}</dt>
                         <dd class="col-7 col-sm-9">
                             @if ($record->platform)
@@ -213,6 +218,10 @@
                             <dd class="col-7 col-sm-9">{{ $field($record->sold_to) }}</dd>
                             <dt class="col-5 col-sm-3 fw-normal text-body-secondary">{{ __('Verkaufspreis') }}</dt>
                             <dd class="col-7 col-sm-9">{{ \App\Support\Format::euro($record->sold_price) ?: '–' }}</dd>
+                            @if ($record->valueChange())
+                                <dt class="col-5 col-sm-3 fw-normal text-body-secondary">{{ __('Gewinn / Verlust') }}</dt>
+                                <dd class="col-7 col-sm-9"><x-value-change :change="$record->valueChange()" /> <span class="small text-body-secondary">{{ __('gegenüber dem Kaufpreis') }}</span></dd>
+                            @endif
                         </dl></div>
                     </div>
                 @endif
