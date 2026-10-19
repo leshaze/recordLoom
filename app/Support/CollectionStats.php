@@ -85,6 +85,34 @@ class CollectionStats
     }
 
     /**
+     * Gain or loss of the collection: records in stock (buy price against current price) and sold records
+     * (buy price against sale price). Only records with both prices count.
+     *
+     * @return array{stock: array{count: int, cost: float, value: float, change: array{amount: float, percent: ?float}}, sold: array{count: int, cost: float, value: float, change: array{amount: float, percent: ?float}}, without_buy_price: int}
+     */
+    public static function balance(): array
+    {
+        $part = function (Builder $query, string $valueColumn): array {
+            $row = $query->whereNotNull('buy_price')->whereNotNull($valueColumn)
+                ->selectRaw("COUNT(*) as count, COALESCE(SUM(buy_price), 0) as cost, COALESCE(SUM({$valueColumn}), 0) as value")
+                ->toBase()->first();
+
+            return [
+                'count' => (int) $row->count,
+                'cost' => round((float) $row->cost, 2),
+                'value' => round((float) $row->value, 2),
+                'change' => Record::change((float) $row->cost, (float) $row->value),
+            ];
+        };
+
+        return [
+            'stock' => $part(self::inStock(), 'current_price'),
+            'sold' => $part(Record::where('sold', true), 'sold_price'),
+            'without_buy_price' => self::inStock()->whereNull('buy_price')->count(),
+        ];
+    }
+
+    /**
      * The five artists or labels with the highest value in stock.
      *
      * @param  class-string<Artist|Label>  $model
