@@ -12,6 +12,7 @@ use App\Services\Discogs\ReleaseMapper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class DiscogsController extends Controller
 {
@@ -50,6 +51,8 @@ class DiscogsController extends Controller
      */
     public function suggestions(Record $record): JsonResponse
     {
+        Gate::authorize('update', $record);
+
         return $this->json(function () use ($record) {
             foreach ($this->mapper->searchCriteriaFor($record) as $criteria) {
                 $results = $this->client->search($criteria, 8);
@@ -67,7 +70,7 @@ class DiscogsController extends Controller
      */
     public function match(Request $request)
     {
-        $records = Record::whereNull('discogs_release_id')
+        $records = Record::visible()->whereNull('discogs_release_id')
             ->when(! $request->boolean('ignored'), fn ($query) => $query->whereNull('discogs_ignored_at'))
             ->with(['artist', 'label'])
             ->orderBy('id')
@@ -77,8 +80,8 @@ class DiscogsController extends Controller
         return view('discogs.match', [
             'records' => $records,
             'configured' => $this->client->isConfigured(),
-            'linkedCount' => Record::whereNotNull('discogs_release_id')->count(),
-            'ignoredCount' => Record::whereNull('discogs_release_id')->whereNotNull('discogs_ignored_at')->count(),
+            'linkedCount' => Record::visible()->whereNotNull('discogs_release_id')->count(),
+            'ignoredCount' => Record::visible()->whereNull('discogs_release_id')->whereNotNull('discogs_ignored_at')->count(),
         ]);
     }
 
@@ -87,6 +90,7 @@ class DiscogsController extends Controller
      */
     public function review(Request $request, Record $record, DiscogsComparison $comparison)
     {
+        Gate::authorize('update', $record);
         $releaseId = (int) $request->validate(['release_id' => ['required', 'integer', 'min:1']])['release_id'];
 
         try {
@@ -109,6 +113,7 @@ class DiscogsController extends Controller
      */
     public function link(Request $request, Record $record, DiscogsComparison $comparison): RedirectResponse
     {
+        Gate::authorize('update', $record);
         $data = $request->validate([
             'release_id' => ['required', 'integer', 'min:1'],
             'use' => ['nullable', 'array'],
@@ -145,6 +150,7 @@ class DiscogsController extends Controller
 
     public function ignore(Record $record): RedirectResponse
     {
+        Gate::authorize('update', $record);
         $record->discogs_ignored_at = now();
         $record->save();
 
@@ -153,6 +159,7 @@ class DiscogsController extends Controller
 
     public function unlink(Record $record): RedirectResponse
     {
+        Gate::authorize('update', $record);
         $this->setRelease($record, null);
         $record->save();
 
@@ -161,6 +168,7 @@ class DiscogsController extends Controller
 
     public function updatePrices(Record $record, DiscogsPrices $prices): RedirectResponse
     {
+        Gate::authorize('update', $record);
         try {
             $prices->update($record);
         } catch (DiscogsException $exception) {
@@ -172,6 +180,7 @@ class DiscogsController extends Controller
 
     public function applyPrice(Request $request, Record $record, DiscogsPrices $prices): RedirectResponse
     {
+        Gate::authorize('update', $record);
         $source = $request->validate([
             'source' => ['required', 'in:'.DiscogsPrices::SOURCE_LOWEST.','.DiscogsPrices::SOURCE_SUGGESTION],
         ])['source'];

@@ -37,7 +37,7 @@ class DuplicateRecords
             return collect();
         }
 
-        $records = Record::with(['artist', 'label'])
+        $records = Record::visible()->with(['artist', 'label'])
             ->when($exceptId, fn (Builder $query) => $query->whereKeyNot($exceptId))
             ->where(function (Builder $query) use ($barcode, $catalog, $release, $label) {
                 if ($barcode !== '') {

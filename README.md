@@ -6,9 +6,35 @@ A small CRM project to archive records.
 
 - Record list with search, filters (LP/CD, status, label, country, Zusatzinfo), sortable columns and page size
 - Cover images per record (stored in `storage/app/private/covers`, not publicly reachable)
-- "Zusatzinfos" like Boxset or Erstpressung, maintained under *Platten → Zusatzinfos verwalten*
+- "Zusatzinfos" like Boxset or Erstpressung, maintained by admins under *Verwaltung → Zusatzinfos verwalten*
 - CSV export (of the filtered list) and CSV import of new records
 - Dashboard with key figures and the latest records
+
+### Login, roles and sellers
+
+Every page needs a login. There is no registration: an admin invites users under *Verwaltung → Benutzer*,
+they get an e-mail with a link to set their password (valid for 3 days, `AUTH_PASSWORD_RESET_EXPIRE` in minutes;
+"Einladung erneut senden" sends a new one). When no mail can be sent, the admin sees the link to pass it on.
+
+| Role | Can |
+| --- | --- |
+| **Admin** | everything: all records (filter *Besitzer*), users, Zusatzinfos |
+| **Benutzer** | an own collection (records, CSV, Discogs, PDF); artists, labels and vendors are shared |
+| **Verkäufer** | only the records assigned to him, without buy price, vendor, note and price history; registers interest |
+
+Selling to sellers: on the page of a record the owner (or an admin) assigns one or more sellers. Sellers register
+or withdraw their interest. The owner sells to one of the interested sellers (sale price and date): the record is
+marked as sold, the buyer and all other interested sellers are notified in the app (bell) and by e-mail. The owner
+is notified in the app when a seller registers or withdraws interest.
+
+**First admin** (also after updating an existing installation): records from before the login have no owner yet
+and become the collection of the first admin.
+
+```
+sudo -u www-data php artisan user:admin you@example.com --name="Your Name"
+```
+
+The command asks for a password. Run with an existing e-mail address it makes that user an admin.
 
 ### Discogs
 
@@ -82,6 +108,8 @@ php artisan migrate --force
 php artisan optimize:clear
 php artisan up
 ```
+
+After the update that introduced the login, create the first admin (see *Login, roles and sellers*).
 
 ### Ablauf auf dem Pi um ein Datenbank-Backup einzuspielen
 ```

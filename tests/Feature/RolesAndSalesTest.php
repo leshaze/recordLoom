@@ -1,0 +1,207 @@
+<?php
+
+use App\Enums\Role;
+use App\Models\Artist;
+use App\Models\Label;
+use App\Models\Record;
+use App\Models\User;
+use App\Notifications\Invitation;
+use App\Notifications\RecordSold;
+use Illuminate\Support\Facades\Notification;
+
+function ownedRecord(User $owner, array $attributes = []): Record
+{
+    $record = new Record;
+    $record->kind = 'LP';
+    $record->artist_id = Artist::firstOrCreate(['name' => 'Kraftwerk'])->id;
+    $record->label_id = Label::firstOrCreate(['name' => 'Kling Klang'])->id;
+    $record->title = 'Autobahn';
+    $record->user_id = $owner->id;
+    foreach ($attributes as $key => $value) {
+        $record->{$key} = $value;
+    }
+    $record->save();
+
+    return $record;
+}
+
+test('guests are sent to the login and there is no registration', function () {
+    $this->app['auth']->forgetGuards();
+
+    $this->get('/')->assertRedirect(route('login'));
+    $this->get(route('records.index'))->assertRedirect(route('login'));
+    $this->get('/register')->assertNotFound();
+    $this->get(route('login'))->assertOk()->assertSee('Anmelden')->assertDontSee('Registrieren');
+});
+
+test('users only see and change their own collection', function () {
+    $anna = User::factory()->create();
+    $ben = User::factory()->create();
+    $own = ownedRecord($anna, ['title' => 'Annas Platte', 'current_price' => '10']);
+    $other = ownedRecord($ben, ['title' => 'Bens Platte', 'current_price' => '99']);
+
+    $this->actingAs($anna);
+    $this->get(route('records.index'))->assertSee('Annas Platte')->assertDontSee('Bens Platte');
+    $this->get('/')->assertSee('10,00 €')->assertDontSee('99,00 €');
+    $this->get(route('records.show', $own))->assertOk()->assertSee('Kaufpreis');
+    $this->get(route('records.show', $other))->assertForbidden();
+    $this->get(route('records.edit', $other))->assertForbidden();
+    $this->put(route('records.update', $other), ['kind' => 'LP', 'title' => 'X', 'artist_name' => 'A', 'label_name' => 'B'])->assertForbidden();
+    $this->delete(route('records.destroy', $other))->assertForbidden();
+    expect(Record::find($other->id))->not->toBeNull();
+
+    // New records belong to the user who adds them.
+    $this->post(route('records.store'), ['kind' => 'LP', 'title' => 'Neu', 'artist_name' => 'Can', 'label_name' => 'UA']);
+    expect(Record::firstWhere('title', 'Neu')->user_id)->toBe($anna->id);
+
+    // Users can not reach the administration.
+    $this->get(route('admin.users.index'))->assertForbidden();
+    $this->get(route('editions.index'))->assertForbidden();
+});
+
+test('admins see all records and can filter them by owner', function () {
+    $anna = User::factory()->create(['name' => 'Anna']);
+    ownedRecord($anna, ['title' => 'Annas Platte']);
+    ownedRecord(User::factory()->create(), ['title' => 'Bens Platte']);
+
+    $this->get(route('records.index'))->assertSee(['Annas Platte', 'Bens Platte']);
+    $this->get(route('records.index', ['owner' => $anna->id]))->assertSee('Annas Platte')->assertDontSee('Bens Platte');
+});
+
+test('sellers only see assigned records without buy price and note', function () {
+    $owner = User::factory()->create();
+    $seller = User::factory()->seller()->create();
+    $assigned = ownedRecord($owner, ['title' => 'Zugewiesen', 'buy_price' => '12.34', 'note' => 'Geheime Notiz', 'current_price' => '40']);
+    $hidden = ownedRecord($owner, ['title' => 'Nicht zugewiesen']);
+    $assigned->sellers()->attach($seller);
+
+    $this->actingAs($seller);
+    $this->get(route('records.index'))->assertSee('Zugewiesen')->assertDontSee('Nicht zugewiesen');
+    $this->get(route('records.show', $assigned))->assertOk()
+        ->assertSee('40,00 €')->assertSee('Interesse anmelden')
+        ->assertDontSee('12,34 €')->assertDontSee('Geheime Notiz')->assertDontSee('Bearbeiten');
+    $this->get(route('records.show', $hidden))->assertForbidden();
+    $this->get(route('records.edit', $assigned))->assertForbidden();
+    $this->get(route('records.create'))->assertForbidden();
+    $this->get(route('artists.index'))->assertForbidden();
+    $this->get('/')->assertOk()->assertSee('Dir zugewiesene Platten, noch nicht verkauft')->assertSee('Zugewiesen');
+});
+
+test('the owner assigns sellers, sellers register interest and the owner sells to one of them', function () {
+    Notification::fake();
+    $owner = User::factory()->create();
+    [$eva, $tom, $ida] = User::factory()->seller()->count(3)->sequence(['name' => 'Eva'], ['name' => 'Tom'], ['name' => 'Ida'])->create();
+    $record = ownedRecord($owner, ['current_price' => '30', 'selling' => true]);
+
+    // Only the owner (or an admin) assigns sellers; only sellers can be assigned.
+    $this->actingAs($owner)->put(route('records.sellers', $record), ['sellers' => [$eva->id, $tom->id, $ida->id]])->assertSessionHas('info');
+    $this->actingAs($owner)->put(route('records.sellers', $record), ['sellers' => [$owner->id]])->assertSessionHasErrors();
+    expect($record->sellers()->pluck('name')->all())->toBe(['Eva', 'Ida', 'Tom']);
+
+    // Eva and Tom are interested, Ida not; Tom withdraws and registers again.
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 1])->assertSessionHas('info');
+    $this->actingAs($tom)->post(route('records.interest', $record), ['interested' => 1]);
+    $this->actingAs($tom)->post(route('records.interest', $record), ['interested' => 0]);
+    $this->actingAs($tom)->post(route('records.interest', $record), ['interested' => 1]);
+    expect($owner->notifications()->count())->toBe(0); // faked; checked below
+
+    // The owner sees the interest; selling to Ida (no interest) is not possible.
+    $this->actingAs($owner)->get(route('records.show', $record))->assertSee('Verkaufen an Eva')->assertSee('Verkaufen an Tom')->assertDontSee('Verkaufen an Ida');
+    $this->actingAs($owner)->post(route('records.sell', $record), ['seller_id' => $ida->id, 'sold_on' => '2026-10-20'])->assertStatus(422);
+
+    $this->actingAs($owner)->post(route('records.sell', $record), ['seller_id' => $eva->id, 'sold_price' => '27,50', 'sold_on' => '2026-10-20'])
+        ->assertRedirect(route('records.show', $record))->assertSessionHas('info');
+
+    $record->refresh();
+    expect($record->sold)->toBeTrue()
+        ->and($record->selling)->toBeFalse()
+        ->and($record->sold_price)->toBe('27.50')
+        ->and($record->sold_on->toDateString())->toBe('2026-10-20')
+        ->and($record->sold_to)->toBe('Eva')
+        ->and($record->sold_to_user_id)->toBe($eva->id);
+
+    Notification::assertSentTo($eva, RecordSold::class, fn ($notification) => $notification->toArray($eva)['kind'] === 'sold_to_you');
+    Notification::assertSentTo($tom, RecordSold::class, fn ($notification) => $notification->toArray($tom)['kind'] === 'sold_to_other');
+    Notification::assertNotSentTo($ida, RecordSold::class);
+
+    // Afterwards: no second sale, no more interest, the buyer sees it.
+    $this->actingAs($owner)->post(route('records.sell', $record), ['seller_id' => $tom->id, 'sold_on' => '2026-10-21'])->assertStatus(422);
+    $this->actingAs($tom)->post(route('records.interest', $record), ['interested' => 0])->assertForbidden();
+    $this->actingAs($eva)->get(route('records.show', $record))->assertSee('an dich verkauft');
+});
+
+test('notifications are stored and shown with a counter', function () {
+    $owner = User::factory()->create();
+    $seller = User::factory()->seller()->create(['name' => 'Eva']);
+    $record = ownedRecord($owner, ['title' => 'Radio-Aktivität']);
+    $record->sellers()->attach($seller);
+
+    $this->actingAs($seller)->post(route('records.interest', $record), ['interested' => 1])->assertSessionHas('info');
+    $this->actingAs($owner)->post(route('records.sell', $record), ['seller_id' => $seller->id, 'sold_on' => '2026-10-20'])->assertSessionHas('info');
+    expect(Record::find($record->id)->sold_price)->toBeNull();
+
+    expect($owner->unreadNotifications()->count())->toBe(1)->and($seller->unreadNotifications()->count())->toBe(1);
+    $this->actingAs($owner)->get('/')->assertSee('bi-bell-fill', false);
+    $this->actingAs($owner)->get(route('notifications.index'))->assertSee('Eva hat Interesse an „Radio-Aktivität“ von Kraftwerk angemeldet.');
+    $this->actingAs($seller)->get(route('notifications.index'))->assertSee('„Radio-Aktivität“ von Kraftwerk wurde an dich verkauft.');
+    expect($owner->unreadNotifications()->count())->toBe(0);
+});
+
+test('admins invite users, who set their password through the link', function () {
+    Notification::fake();
+
+    $this->post(route('admin.users.store'), ['name' => 'Vera', 'email' => 'Vera@Example.com', 'role' => 'seller'])
+        ->assertRedirect(route('admin.users.index'))->assertSessionHas('info');
+    $vera = User::firstWhere('email', 'vera@example.com');
+    expect($vera->role)->toBe(Role::Seller);
+
+    $token = null;
+    Notification::assertSentTo($vera, Invitation::class, function (Invitation $invitation) use ($vera, &$token) {
+        $token = str($invitation->toMail($vera)->actionUrl)->after('reset-password/')->before('?')->toString();
+
+        return true;
+    });
+
+    $this->app['auth']->forgetGuards();
+    $this->post(route('password.store'), ['token' => $token, 'email' => 'vera@example.com', 'password' => 'geheim123', 'password_confirmation' => 'geheim123'])
+        ->assertRedirect(route('login'));
+    $this->post(route('login'), ['email' => 'vera@example.com', 'password' => 'geheim123'])->assertRedirect(route('dashboard'));
+    $this->assertAuthenticatedAs($vera);
+});
+
+test('the last admin keeps his role and nobody deletes himself or users with records', function () {
+    $admin = auth()->user();
+    $owner = User::factory()->create(['name' => 'Olga']);
+    ownedRecord($owner);
+
+    $this->put(route('admin.users.update', $admin), ['name' => $admin->name, 'email' => $admin->email, 'role' => 'user'])->assertSessionHas('error');
+    expect($admin->fresh()->isAdmin())->toBeTrue();
+
+    $this->put(route('admin.users.update', $owner), ['name' => 'Olga', 'email' => $owner->email, 'role' => 'seller'])->assertSessionHas('error');
+    $this->delete(route('admin.users.destroy', $admin))->assertSessionHas('error');
+    $this->delete(route('admin.users.destroy', $owner))->assertSessionHas('error');
+
+    $this->put(route('admin.users.update', $owner), ['name' => 'Olga M.', 'email' => $owner->email, 'role' => 'admin'])->assertSessionHas('info');
+    expect($owner->fresh()->isAdmin())->toBeTrue();
+});
+
+test('the first admin gets the records from before the login', function () {
+    $record = ownedRecord(User::factory()->create());
+    $record->user_id = null;
+    $record->save();
+
+    $this->artisan('user:admin', ['email' => 'chef@example.com', '--name' => 'Chef'])
+        ->expectsQuestion('Password (at least 8 characters)', 'geheim123')
+        ->expectsQuestion('Repeat the password', 'geheim123')
+        ->assertSuccessful();
+
+    $chef = User::firstWhere('email', 'chef@example.com');
+    expect($chef->isAdmin())->toBeTrue()->and($record->fresh()->user_id)->toBe($chef->id);
+});
+
+test('forgot password does not reveal whether an address exists', function () {
+    $this->app['auth']->forgetGuards();
+
+    $this->post(route('password.email'), ['email' => 'niemand@example.com'])
+        ->assertSessionHasNoErrors()->assertSessionHas('status');
+});

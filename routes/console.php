@@ -1,10 +1,12 @@
 <?php
 
+use App\Enums\Role;
 use App\Mail\DatabaseBackupMail;
 use App\Models\Artist;
 use App\Models\Label;
 use App\Models\PriceHistory;
 use App\Models\Record;
+use App\Models\User;
 use App\Services\Backup\DatabaseBackup;
 use App\Services\Discogs\DiscogsClient;
 use App\Services\Discogs\DiscogsException;
@@ -116,3 +118,39 @@ if (config('backup.enabled') && config('backup.mail_to')) {
     // the server was off is sent as soon as it runs again.
     Schedule::command('backup:mail --if-due')->everyFifteenMinutes()->withoutOverlapping();
 }
+
+Artisan::command('user:admin
+    {email : E-mail address of the admin}
+    {--name= : Name (asked when the user does not exist yet)}', function () {
+    $email = strtolower(trim($this->argument('email')));
+    if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $this->error('This is not a valid e-mail address.');
+
+        return 1;
+    }
+
+    $user = User::firstWhere('email', $email);
+    if ($user) {
+        $user->role = Role::Admin;
+        $user->save();
+        $this->info("{$user->name} is an admin now.");
+    } else {
+        $name = $this->option('name') ?: $this->ask('Name');
+        $password = $this->secret('Password (at least 8 characters)');
+        if (blank($name) || strlen((string) $password) < 8 || $password !== $this->secret('Repeat the password')) {
+            $this->error('Name missing, password too short or not repeated correctly.');
+
+            return 1;
+        }
+        $user = User::create(['name' => $name, 'email' => $email, 'password' => $password, 'role' => Role::Admin]);
+        $this->info("Admin {$user->name} created.");
+    }
+
+    // Records from before the login have no owner yet: they become the admin's collection.
+    $count = Record::whereNull('user_id')->update(['user_id' => $user->id]);
+    if ($count > 0) {
+        $this->info("{$count} existing records belong to {$user->name} now.");
+    }
+
+    return 0;
+})->purpose('Create the first admin (or make a user admin) and give him the records without owner');

@@ -73,6 +73,8 @@ class RecordFilter
             'label' => $request->integer('label') ?: null,
             'country' => $request->integer('country') ?: null,
             'edition' => $request->integer('edition') ?: null,
+            // Admins only: records of one user.
+            'owner' => $request->user()?->isAdmin() ? ($request->integer('owner') ?: null) : null,
             'status' => is_string($status) && array_key_exists($status, self::STATUS) ? $status : null,
             'sort' => is_string($sort) && array_key_exists($sort, self::SORTS) ? $sort : 'artist',
             'dir' => $request->query('dir') === 'desc' ? 'desc' : 'asc',
@@ -160,7 +162,7 @@ class RecordFilter
 
     public function query(): Builder
     {
-        $query = Record::query();
+        $query = Record::visible();
         $v = $this->values;
 
         if ($this->scope) {
@@ -187,6 +189,7 @@ class RecordFilter
         $query->when($v['kind'], fn (Builder $query, $kind) => $query->where('kind', $kind))
             ->when($v['label'], fn (Builder $query, $label) => $query->where('label_id', $label))
             ->when($v['country'], fn (Builder $query, $country) => $query->where('country_id', $country))
+            ->when($v['owner'], fn (Builder $query, $owner) => $query->where('records.user_id', $owner))
             ->when($v['edition'], fn (Builder $query, $edition) => $query->whereHas('editions', fn (Builder $query) => $query->whereKey($edition)));
 
         match ($v['status']) {
@@ -227,6 +230,6 @@ class RecordFilter
     {
         $v = $this->values;
 
-        return $v['q'] !== '' || $v['barcode'] !== '' || $v['kind'] || $v['label'] || $v['country'] || $v['edition'] || $v['status'];
+        return $v['q'] !== '' || $v['barcode'] !== '' || $v['kind'] || $v['label'] || $v['country'] || $v['edition'] || $v['status'] || $v['owner'];
     }
 }

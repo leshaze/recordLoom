@@ -1,5 +1,7 @@
 <?php
 
+beforeEach(fn () => $this->app['auth']->forgetGuards());
+
 use App\Models\User;
 
 test('login screen can be rendered', function () {

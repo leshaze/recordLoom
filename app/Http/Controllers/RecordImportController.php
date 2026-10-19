@@ -59,7 +59,9 @@ class RecordImportController extends Controller
             foreach (RecordCsv::FLAGS as $flag) {
                 $values[$flag] = $data[$flag];
             }
-            $saveRecord(new Record, $values);
+            $record = new Record;
+            $record->user_id = $request->user()->id;
+            $saveRecord($record, $values);
             $imported++;
         }
 

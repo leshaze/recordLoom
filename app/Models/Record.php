@@ -4,8 +4,11 @@ namespace App\Models;
 
 use App\Services\Discogs\ReleaseMapper;
 use App\Support\Grading;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Auth;
 
 class Record extends Model
 {
@@ -60,6 +63,51 @@ class Record extends Model
     public function editions(): BelongsToMany
     {
         return $this->belongsToMany(Edition::class)->orderBy('name');
+    }
+
+    /**
+     * The user whose collection the record belongs to.
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Sellers the record is assigned to, with the time they registered interest (null = no interest).
+     */
+    public function sellers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'record_seller')->using(RecordSeller::class)->withPivot('interested_at')->withTimestamps()->orderBy('name');
+    }
+
+    /**
+     * The seller the record was sold to.
+     */
+    public function soldToUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sold_to_user_id');
+    }
+
+    /**
+     * Records the signed in user may see.
+     */
+    public static function visible(): Builder
+    {
+        return static::query()->visibleTo(Auth::user());
+    }
+
+    /**
+     * Records a user may see: admins all, users their own collection, sellers the records assigned to them.
+     */
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        return match (true) {
+            $user === null => $query->whereRaw('1 = 0'),
+            $user->isAdmin() => $query,
+            $user->isSeller() => $query->whereHas('sellers', fn (Builder $query) => $query->whereKey($user->id)),
+            default => $query->where('records.user_id', $user->id),
+        };
     }
 
     /**

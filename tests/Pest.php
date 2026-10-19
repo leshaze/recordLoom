@@ -1,5 +1,10 @@
 <?php
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -11,13 +16,18 @@
 |
 */
 
-pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+// All pages need a login: the feature tests run as an admin, who sees every record.
+// Tests of the login itself (Feature/Auth) sign out first.
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        $this->actingAs(User::factory()->admin()->create(['name' => 'Test Admin']));
+    })
     ->in('Feature');
 
 // The backup uses "VACUUM INTO", which is not possible inside the transaction of RefreshDatabase.
-pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\DatabaseMigrations::class)
+pest()->extend(TestCase::class)
+    ->use(DatabaseMigrations::class)
     ->in('Backup');
 
 /*

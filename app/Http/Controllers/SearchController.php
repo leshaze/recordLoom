@@ -33,7 +33,7 @@ class SearchController extends Controller
             'label' => Label::where('name', 'like', $like)->orderBy('name')->limit(self::LIMIT)->get(['id', 'name']),
             'country' => Country::where('name', 'like', $like)->orderBy('name')->limit(self::LIMIT)->get(['id', 'name']),
             'platform' => Platform::where('name', 'like', $like)->orderBy('name')->limit(self::LIMIT)->get(['id', 'name']),
-            'title' => Record::where('title', 'like', $like)
+            'title' => Record::visible()->where('title', 'like', $like)
                 ->where('artist_id', $request->integer('artist_id'))
                 ->orderBy('title')
                 ->limit(self::LIMIT)
@@ -47,7 +47,7 @@ class SearchController extends Controller
 
     private function searchAll(string $like)
     {
-        $records = Record::query()
+        $records = Record::visible()
             ->select('id', DB::raw('title as name'), DB::raw("'record' as type"))
             ->where('title', 'like', $like);
         $labels = Label::query()

@@ -77,8 +77,8 @@ abstract class GroupController extends Controller
             'item' => $item,
             'records' => $filter->query()->with(RecordController::LIST_RELATIONS)->paginate($filter->values['per_page'])->withQueryString(),
             'filter' => $filter,
-            'recordCount' => $item->records()->count(),
-            'totalValue' => $item->records()->where('sold', false)->sum('current_price'),
+            'recordCount' => $item->records()->visibleTo($request->user())->count(),
+            'totalValue' => $item->records()->visibleTo($request->user())->where('sold', false)->sum('current_price'),
             'labels' => $this->resource === 'labels' ? null : Label::orderBy('name')->get(['id', 'name']),
             'countries' => Country::orderBy('name')->get(['id', 'name']),
             'editions' => Edition::orderBy('name')->get(['id', 'name']),
@@ -137,7 +137,7 @@ abstract class GroupController extends Controller
         abort_unless($this->printRelation, 404);
 
         $item = $this->item($request);
-        $records = $item->records()->with([$this->printRelation, 'country', 'editions'])->orderBy('title')->get();
+        $records = $item->records()->visibleTo($request->user())->with([$this->printRelation, 'country', 'editions'])->orderBy('title')->get();
 
         return Pdf::loadView('groups.print', [
             'item' => $item,

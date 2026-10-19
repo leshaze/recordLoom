@@ -9,6 +9,7 @@ use App\Models\Record;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Figures for the dashboard. "In stock" means neither sold nor lost, like the value tile.
@@ -22,7 +23,7 @@ class CollectionStats
 
     public static function inStock(): Builder
     {
-        return Record::where('sold', false)->where('lost', false);
+        return Record::visible()->where('sold', false)->where('lost', false);
     }
 
     /**
@@ -36,7 +37,7 @@ class CollectionStats
     {
         // Plain rows instead of models: casting dates and decimals for every record and month is far too slow
         // on a Raspberry Pi. Dates are compared as text ("2026-03-15 10:00:00"), months as "2026-03".
-        $records = Record::where('lost', false)
+        $records = Record::visible()->where('lost', false)
             ->where(fn (Builder $query) => $query->where('sold', false)->orWhereNotNull('sold_on'))
             ->toBase()
             ->get(['id', 'created_at', 'sold', 'sold_on', 'current_price']);
@@ -107,7 +108,7 @@ class CollectionStats
 
         return [
             'stock' => $part(self::inStock(), 'current_price'),
-            'sold' => $part(Record::where('sold', true), 'sold_price'),
+            'sold' => $part(Record::visible()->where('sold', true), 'sold_price'),
             'without_buy_price' => self::inStock()->whereNull('buy_price')->count(),
         ];
     }
@@ -120,7 +121,7 @@ class CollectionStats
      */
     public static function top(string $model, int $limit = 5): Collection
     {
-        $inStock = fn (Builder $query) => $query->where('sold', false)->where('lost', false);
+        $inStock = fn (Builder $query) => $query->visibleTo(Auth::user())->where('sold', false)->where('lost', false);
 
         return $model::query()
             ->withSum(['records as value' => $inStock], 'current_price')
@@ -167,7 +168,7 @@ class CollectionStats
     {
         $years = [];
 
-        foreach (Record::toBase()->cursor(['created_at', 'sold', 'sold_on', 'sold_price']) as $record) {
+        foreach (Record::visible()->toBase()->cursor(['created_at', 'sold', 'sold_on', 'sold_price']) as $record) {
             if ($record->created_at) {
                 $year = (int) substr((string) $record->created_at, 0, 4);
                 $years[$year]['added'] = ($years[$year]['added'] ?? 0) + 1;

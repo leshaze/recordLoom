@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Role;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -22,6 +24,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -44,6 +47,41 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => Role::class,
         ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === Role::Admin;
+    }
+
+    public function isSeller(): bool
+    {
+        return $this->role === Role::Seller;
+    }
+
+    /**
+     * Admins and users keep a collection; sellers only see assigned records.
+     */
+    public function managesCollection(): bool
+    {
+        return ! $this->isSeller();
+    }
+
+    /**
+     * The records of the user's own collection.
+     */
+    public function records(): HasMany
+    {
+        return $this->hasMany(Record::class);
+    }
+
+    /**
+     * Records assigned to the seller, with the time he registered interest (null = no interest).
+     */
+    public function assignedRecords(): BelongsToMany
+    {
+        return $this->belongsToMany(Record::class, 'record_seller')->using(RecordSeller::class)->withPivot('interested_at')->withTimestamps();
     }
 }

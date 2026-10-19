@@ -5,6 +5,7 @@ namespace App\Support;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Search, sorting and paging of the artist and label lists, taken from the query string.
@@ -52,9 +53,10 @@ class GroupFilter
     public function query(): Builder
     {
         $v = $this->values;
-        $kind = fn (string $kind) => fn (Builder $query) => $query->where('kind', $kind);
+        $user = Auth::user();
+        $kind = fn (string $kind) => fn (Builder $query) => $query->visibleTo($user)->where('kind', $kind);
         // Sold records are counted but no longer part of the value.
-        $value = fn (string $kind) => fn (Builder $query) => $query->where('kind', $kind)->where('sold', false);
+        $value = fn (string $kind) => fn (Builder $query) => $query->visibleTo($user)->where('kind', $kind)->where('sold', false);
 
         $query = $this->model::query()
             ->withCount(['records as lps' => $kind('LP'), 'records as cds' => $kind('CD')])
@@ -71,8 +73,8 @@ class GroupFilter
         }
 
         match ($v['records']) {
-            'with' => $query->has('records'),
-            'without' => $query->doesntHave('records'),
+            'with' => $query->whereHas('records', fn (Builder $query) => $query->visibleTo($user)),
+            'without' => $query->whereDoesntHave('records', fn (Builder $query) => $query->visibleTo($user)),
             default => null,
         };
 

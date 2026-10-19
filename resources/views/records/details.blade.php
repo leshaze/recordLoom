@@ -23,16 +23,22 @@
             <div style="min-width: 0;">
                 <h1 class="h3 mb-0 text-break">{{ $record->title }}</h1>
                 <div class="text-body-secondary">
-                    <a href="{{ route('artists.show', $record->artist_id) }}">{{ $record->artist->name }}</a>
+                    @if ($canEdit) <a href="{{ route('artists.show', $record->artist_id) }}">{{ $record->artist->name }}</a>
+                    @else {{ $record->artist->name }} @endif
                     · {{ $record->kind }}
                     @if ($record->release_year) · {{ $record->release_year }} @endif
+                    @if (auth()->user()->isAdmin() && $record->owner && ! $record->owner->is(auth()->user()))
+                        · <i class="bi bi-person"></i> {{ $record->owner->name }}
+                    @endif
                 </div>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{{ route('records.edit', $record) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> {{ __('Bearbeiten') }}</a>
-                <x-delete-button :action="route('records.destroy', $record)" :label="__('Löschen')"
-                    :message="__('Die Platte „:title“ von :artist wirklich löschen?', ['title' => $record->title, 'artist' => $record->artist->name])" />
-            </div>
+            @if ($canEdit)
+                <div class="d-flex gap-2">
+                    <a href="{{ route('records.edit', $record) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> {{ __('Bearbeiten') }}</a>
+                    <x-delete-button :action="route('records.destroy', $record)" :label="__('Löschen')"
+                        :message="__('Die Platte „:title“ von :artist wirklich löschen?', ['title' => $record->title, 'artist' => $record->artist->name])" />
+                </div>
+            @endif
         </div>
 
         <div class="row g-3">
@@ -47,7 +53,7 @@
             <div class="col-7 d-md-none small">
                 <div class="text-body-secondary">{{ __('Aktueller Preis') }}</div>
                 <div class="fs-5 fw-semibold">{{ \App\Support\Format::euro($record->current_price) ?: '–' }}</div>
-                <div class="mb-2"><x-value-change :change="$record->sold ? null : $record->valueChange()" /></div>
+                <div class="mb-2"><x-value-change :change="$record->sold || ! $canEdit ? null : $record->valueChange()" /></div>
                 @if ($record->gradingMedia() || $record->gradingCover())
                     <div class="mb-2">
                         <span class="text-body-secondary">{{ __('M') }}</span> <x-grading-badge :grading="$record->gradingMedia()" />
@@ -64,7 +70,10 @@
                     <div class="card-header">{{ __('Stammdaten & Details') }}</div>
                     <div class="card-body"><dl class="row mb-0">
                         <dt class="col-5 col-sm-3 fw-normal text-body-secondary">{{ __('Label') }}</dt>
-                        <dd class="col-7 col-sm-9"><a href="{{ route('labels.show', $record->label_id) }}">{{ $record->label->name }}</a></dd>
+                        <dd class="col-7 col-sm-9">
+                            @if ($canEdit) <a href="{{ route('labels.show', $record->label_id) }}">{{ $record->label->name }}</a>
+                            @else {{ $record->label->name }} @endif
+                        </dd>
                         <dt class="col-5 col-sm-3 fw-normal text-body-secondary">{{ __('Katalog-Nr.') }}</dt>
                         <dd class="col-7 col-sm-9">{{ $field($record->catalog_number) }}</dd>
                         <dt class="col-5 col-sm-3 fw-normal text-body-secondary">{{ __('Matrix-Nr.') }}</dt>
@@ -99,6 +108,7 @@
                         </dd>
                         <dt class="col-5 col-sm-3 fw-normal text-body-secondary">{{ __('Aktueller Preis') }}</dt>
                         <dd class="col-7 col-sm-9">{{ \App\Support\Format::euro($record->current_price) ?: '–' }}</dd>
+                        @if ($canEdit)
                         <dt class="col-5 col-sm-3 fw-normal text-body-secondary">{{ __('Kaufpreis') }}</dt>
                         <dd class="col-7 col-sm-9">{{ \App\Support\Format::euro($record->buy_price) ?: '–' }}</dd>
                         @if (! $record->sold && $record->valueChange())
@@ -111,9 +121,17 @@
                                 <a href="{{ route('platforms.show', $record->platform) }}">{{ $record->platform->name }}</a>
                             @else – @endif
                         </dd>
+                        @endif
                     </dl></div>
                 </div>
 
+                @if ($canEdit)
+                    @include('records._sellers')
+                @elseif ($assignment)
+                    @include('records._interest')
+                @endif
+
+                @if ($canEdit)
                 <div class="card mb-3 border-info-subtle">
                     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <span><i class="bi bi-vinyl"></i> Discogs</span>
@@ -207,8 +225,9 @@
                         <div class="small text-body-secondary mt-2">{{ __('Daten von') }} <a href="https://www.discogs.com" target="_blank" rel="noopener noreferrer">Discogs</a></div>
                     </div>
                 </div>
+                @endif
 
-                @if ($record->sold)
+                @if ($record->sold && $canEdit)
                     <div class="card mb-3">
                         <div class="card-header">{{ __('Verkauf') }}</div>
                         <div class="card-body"><dl class="row mb-0">
@@ -226,7 +245,7 @@
                     </div>
                 @endif
 
-                @if ($record->note)
+                @if ($record->note && $canEdit)
                     <div class="card mb-3">
                         <div class="card-header">{{ __('Notiz') }}</div>
                         <div class="card-body" style="white-space: pre-line;">{{ $record->note }}</div>

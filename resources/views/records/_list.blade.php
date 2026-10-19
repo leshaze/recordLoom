@@ -1,6 +1,10 @@
 {{-- Filter, table (large screens) and cards (phones) of records; used by "Alle Platten" and the pages of
      artists, labels and platforms. $labels is null to hide the label filter (on the page of a label). --}}
-@php $v = $filter->values; @endphp
+@php
+    $v = $filter->values;
+    $manage = auth()->user()->managesCollection();
+    $owners ??= null;
+@endphp
 <form method="GET" action="{{ $filter->url() }}" class="card card-body mb-3">
     <input type="hidden" name="sort" value="{{ $v['sort'] }}">
     @if ($v['barcode'] !== '')
@@ -67,6 +71,17 @@
                 @endforeach
             </select>
         </div>
+        @if ($owners)
+            <div class="col-6 col-md-4 col-lg-1">
+                <label for="filter-owner" class="form-label small mb-1">{{ __('Besitzer') }}</label>
+                <select name="owner" id="filter-owner" class="form-select form-select-sm" data-auto-submit>
+                    <option value="">{{ __('Alle') }}</option>
+                    @foreach ($owners as $owner)
+                        <option value="{{ $owner->id }}" @selected($v['owner'] === $owner->id)>{{ $owner->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        @endif
         <div class="col-6 col-md-4 col-lg-1">
             <label for="filter-per-page" class="form-label small mb-1">{{ __('Pro Seite') }}</label>
             <select name="per_page" id="filter-per-page" class="form-select form-select-sm" data-auto-submit>
@@ -89,14 +104,18 @@
         @if ($v['barcode'] !== '')
             <p>{{ __('Keine Platte mit dem Barcode :barcode in der Sammlung.', ['barcode' => $v['barcode']]) }}</p>
             <div class="d-flex flex-wrap gap-2">
-                <a href="{{ route('records.create', ['barcode' => $v['barcode']]) }}" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-lg"></i> {{ __('Neue Platte anlegen und bei Discogs suchen') }}</a>
+                @if ($manage)
+                    <a href="{{ route('records.create', ['barcode' => $v['barcode']]) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg"></i> {{ __('Neue Platte anlegen und bei Discogs suchen') }}</a>
+                @endif
                 <a href="{{ $filter->url() }}" class="btn btn-outline-secondary btn-sm">{{ __('Alle Platten') }}</a>
             </div>
         @elseif ($filter->isActive())
             {{ __('Keine Platten gefunden.') }} <a href="{{ $filter->url() }}">{{ __('Filter zurücksetzen') }}</a>
         @elseif ($filter->scope)
             {{ __('Keine Platten vorhanden.') }}
+        @elseif (! $manage)
+            {{ __('Dir sind noch keine Platten zugewiesen.') }}
         @else
             {{ __('Noch keine Platten erfasst.') }} <a href="{{ route('records.create') }}">{{ __('Erste Platte anlegen') }}</a>
         @endif
@@ -127,7 +146,10 @@
                         <tr @class(['text-decoration-line-through opacity-50' => $record->sold || $record->lost])>
                             <td><x-cover :record="$record" :size="36" /></td>
                             <td>{{ $record->kind }}</td>
-                            <td><a href="{{ route('artists.show', $record->artist_id) }}">{{ $record->artist->name }}</a></td>
+                            <td>
+                                @if ($manage) <a href="{{ route('artists.show', $record->artist_id) }}">{{ $record->artist->name }}</a>
+                                @else {{ $record->artist->name }} @endif
+                            </td>
                             <td>
                                 <a href="{{ route('records.show', $record) }}" class="fw-semibold">{{ $record->title }}</a>
                                 @foreach ($record->editions as $edition)
@@ -136,8 +158,12 @@
                                 @if ($record->selling && ! $record->sold) <span class="badge text-bg-info fw-normal">{{ __('Verkauf') }}</span> @endif
                                 @if ($record->sold) <span class="badge text-bg-secondary fw-normal">{{ __('Verkauft') }}</span> @endif
                                 @if ($record->lost) <span class="badge text-bg-danger fw-normal">{{ __('Verloren') }}</span> @endif
+                                @include('records._seller-badges')
                             </td>
-                            <td><a href="{{ route('labels.show', $record->label_id) }}">{{ $record->label->name }}</a></td>
+                            <td>
+                                @if ($manage) <a href="{{ route('labels.show', $record->label_id) }}">{{ $record->label->name }}</a>
+                                @else {{ $record->label->name }} @endif
+                            </td>
                             <td class="text-nowrap">
                                 @if ($record->gradingMedia() || $record->gradingCover())
                                     <span class="text-body-secondary">{{ __('M') }}</span> <x-grading-badge :grading="$record->gradingMedia()" />
@@ -150,9 +176,11 @@
                             <td>{{ $record->country?->name }}</td>
                             <td class="text-end text-nowrap">{{ \App\Support\Format::euro($record->current_price) }}</td>
                             <td class="text-end text-nowrap">
-                                <a href="{{ route('records.edit', $record) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Bearbeiten') }}" aria-label="{{ __('Bearbeiten') }}"><i class="bi bi-pencil-square"></i></a>
-                                <x-delete-button :action="route('records.destroy', $record)"
-                                    :message="__('Die Platte „:title“ von :artist wirklich löschen?', ['title' => $record->title, 'artist' => $record->artist->name])" />
+                                @can('update', $record)
+                                    <a href="{{ route('records.edit', $record) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Bearbeiten') }}" aria-label="{{ __('Bearbeiten') }}"><i class="bi bi-pencil-square"></i></a>
+                                    <x-delete-button :action="route('records.destroy', $record)"
+                                        :message="__('Die Platte „:title“ von :artist wirklich löschen?', ['title' => $record->title, 'artist' => $record->artist->name])" />
+                                @endcan
                             </td>
                         </tr>
                     @endforeach
@@ -183,6 +211,7 @@
                             @foreach ($record->editions as $edition)
                                 <span class="badge text-bg-dark border">{{ $edition->label }}</span>
                             @endforeach
+                            @include('records._seller-badges')
                         </div>
                     </div>
                     @if (filled($record->current_price))

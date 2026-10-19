@@ -13,9 +13,15 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="mainNavigation">
+            @php $user = auth()->user(); @endphp
             <ul class="navbar-nav me-auto">
+                @if ($user->isSeller())
+                    <li class="nav-item">
+                        <a href="{{ route('records.index') }}" @class(['nav-link', 'active' => request()->routeIs('records.*')])>{{ __('Meine Platten (Verkäufer)') }}</a>
+                    </li>
+                @else
                 <li class="nav-item dropdown">
-                    <a href="#" @class(['nav-link dropdown-toggle', 'active' => request()->routeIs('records.*', 'editions.*', 'discogs.*')]) data-bs-toggle="dropdown">{{ __('Platten') }}</a>
+                    <a href="#" @class(['nav-link dropdown-toggle', 'active' => request()->routeIs('records.*', 'discogs.*')]) data-bs-toggle="dropdown">{{ __('Platten') }}</a>
                     <div class="dropdown-menu">
                         <a href="{{ route('records.index') }}" class="dropdown-item">{{ __('Alle Platten') }}</a>
                         <a href="{{ route('records.index', ['status' => 'selling']) }}" class="dropdown-item">{{ __('Zum Verkauf vorgemerkt') }}</a>
@@ -25,7 +31,6 @@
                         <a href="{{ route('records.import') }}" class="dropdown-item"><i class="bi bi-upload"></i> {{ __('CSV-Import') }}</a>
                         <a href="{{ route('records.export') }}" class="dropdown-item"><i class="bi bi-download"></i> {{ __('CSV-Export (alle)') }}</a>
                         <div class="dropdown-divider"></div>
-                        <a href="{{ route('editions.index') }}" class="dropdown-item"><i class="bi bi-tags"></i> {{ __('Zusatzinfos verwalten') }}</a>
                         <a href="{{ route('discogs.match') }}" class="dropdown-item"><i class="bi bi-link-45deg"></i> {{ __('Mit Discogs abgleichen') }}</a>
                     </div>
                 </li>
@@ -50,6 +55,18 @@
                         <a href="{{ route('platforms.create') }}" class="dropdown-item"><i class="bi bi-plus-lg"></i> {{ __('Neuer Anbieter') }}</a>
                     </div>
                 </li>
+                @endif
+                @if ($user->isAdmin())
+                    <li class="nav-item dropdown">
+                        <a href="#" @class(['nav-link dropdown-toggle', 'active' => request()->routeIs('admin.*', 'editions.*')]) data-bs-toggle="dropdown">{{ __('Verwaltung') }}</a>
+                        <div class="dropdown-menu">
+                            <a href="{{ route('admin.users.index') }}" class="dropdown-item"><i class="bi bi-people"></i> {{ __('Benutzer') }}</a>
+                            <a href="{{ route('admin.users.create') }}" class="dropdown-item"><i class="bi bi-person-plus"></i> {{ __('Benutzer einladen') }}</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="{{ route('editions.index') }}" class="dropdown-item"><i class="bi bi-tags"></i> {{ __('Zusatzinfos verwalten') }}</a>
+                        </div>
+                    </li>
+                @endif
             </ul>
             <div class="btn-group btn-group-sm me-lg-3 my-2 my-lg-0" role="group" aria-label="{{ __('Sprache') }}">
                 @foreach (\App\Http\Middleware\SetLocale::LOCALES as $locale)
@@ -67,6 +84,32 @@
                     </button>
                 </div>
             </form>
+            @php $unread = $user->unreadNotifications()->count(); @endphp
+            <ul class="navbar-nav ms-lg-3">
+                <li class="nav-item">
+                    <a href="{{ route('notifications.index') }}" class="nav-link position-relative" title="{{ __('Benachrichtigungen') }}">
+                        <i class="bi bi-bell{{ $unread ? '-fill' : '' }}"></i>
+                        <span class="d-lg-none ms-1">{{ __('Benachrichtigungen') }}</span>
+                        @if ($unread)
+                            <span class="badge rounded-pill text-bg-danger">{{ $unread }}<span class="visually-hidden"> {{ __('ungelesen') }}</span></span>
+                        @endif
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a href="#" @class(['nav-link dropdown-toggle', 'active' => request()->routeIs('profile.*')]) data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i> <span class="d-lg-none d-xl-inline">{{ $user->name }}</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <span class="dropdown-item-text small text-body-secondary">{{ $user->role->label() }}</span>
+                        <a href="{{ route('profile.show') }}" class="dropdown-item"><i class="bi bi-person"></i> {{ __('Profil') }}</a>
+                        <div class="dropdown-divider"></div>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right"></i> {{ __('Abmelden') }}</button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
         </div>
     </div>
 </nav>

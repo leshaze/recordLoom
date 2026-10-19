@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Actions\SaveRecord;
+use App\Enums\Role;
 use App\Http\Requests\StoreRecordRequest;
 use App\Http\Requests\UpdateRecordRequest;
 use App\Models\Country;
 use App\Models\Edition;
 use App\Models\Label;
 use App\Models\Record;
+use App\Models\User;
 use App\Services\Discogs\DiscogsClient;
 use App\Services\Discogs\DiscogsCovers;
 use App\Support\CoverStorage;
@@ -20,6 +22,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class RecordController extends Controller
 {
@@ -32,8 +35,12 @@ class RecordController extends Controller
     {
         $filter = new RecordFilter($request);
         $filter->remember($request);
+        $user = $request->user();
         $records = $filter->query()
             ->with(self::LIST_RELATIONS)
+            // Sellers see their own interest, owners the number of interested sellers.
+            ->when($user->isSeller(), fn (Builder $query) => $query->with(['sellers' => fn ($query) => $query->whereKey($user->id)]))
+            ->when(! $user->isSeller(), fn (Builder $query) => $query->withCount(['sellers as interested_count' => fn ($query) => $query->whereNotNull('record_seller.interested_at')]))
             ->paginate($filter->values['per_page'])
             ->withQueryString();
 
@@ -43,6 +50,7 @@ class RecordController extends Controller
             'labels' => Label::orderBy('name')->get(['id', 'name']),
             'countries' => Country::orderBy('name')->get(['id', 'name']),
             'editions' => Edition::orderBy('name')->get(['id', 'name']),
+            'owners' => $user->isAdmin() ? User::where('role', '!=', Role::Seller->value)->orderBy('name')->get(['id', 'name']) : null,
         ]);
     }
 
@@ -52,7 +60,7 @@ class RecordController extends Controller
     public function barcode(Request $request)
     {
         $barcode = RecordFilter::normalizeBarcode((string) $request->query('code', ''));
-        $records = $barcode === '' ? collect() : RecordFilter::whereBarcode(Record::query(), $barcode)->limit(2)->pluck('id');
+        $records = $barcode === '' ? collect() : RecordFilter::whereBarcode(Record::visible(), $barcode)->limit(2)->pluck('id');
 
         if ($records->count() === 1) {
             return redirect()->route('records.show', $records->first());
@@ -61,9 +69,6 @@ class RecordController extends Controller
         return redirect()->route('records.index', ['barcode' => $barcode]);
     }
 
-    /**
-     * The old "For Selling" page is now a filter of the record list.
-     */
     public function create(Request $request)
     {
         return view('records.create', [
@@ -87,7 +92,9 @@ class RecordController extends Controller
         }
 
         $data = [...$request->validated(), 'selling' => $request->boolean('selling')];
-        $record = $saveRecord(new Record, $data, $request->file('cover'));
+        $record = new Record;
+        $record->user_id = $request->user()->id;
+        $saveRecord($record, $data, $request->file('cover'));
         $warning = $this->coverFromDiscogs($request, $record, $covers);
 
         return redirect()->route('records.show', $record)
@@ -97,12 +104,21 @@ class RecordController extends Controller
 
     public function show(Request $request, Record $record)
     {
-        $record->load(['artist', 'label', 'country', 'platform', 'editions']);
-        $prices = $record->prices()->with('platform')->latest()->take(5)->get()->reverse();
+        Gate::authorize('view', $record);
+        $user = $request->user();
+        $canEdit = $user->can('update', $record);
+
+        $record->load(['artist', 'label', 'country', 'platform', 'editions', 'owner', 'soldToUser']);
+        $prices = $canEdit ? $record->prices()->with('platform')->latest()->take(5)->get()->reverse() : collect();
 
         return view('records.details', [
             'record' => $record,
             'prices' => $prices,
+            'canEdit' => $canEdit,
+            // Sellers: assigned ones with their interest (owner), or the own assignment (seller).
+            'sellers' => $canEdit ? $record->sellers()->get() : collect(),
+            'availableSellers' => $canEdit ? User::where('role', Role::Seller)->orderBy('name')->get(['id', 'name']) : collect(),
+            'assignment' => $user->isSeller() ? $record->sellers()->whereKey($user->id)->first()?->pivot : null,
             'navigation' => $this->navigation($request, $record),
         ]);
     }
@@ -150,6 +166,8 @@ class RecordController extends Controller
 
     public function edit(Record $record)
     {
+        Gate::authorize('update', $record);
+
         return view('records.edit', ['record' => $record, 'editions' => Edition::orderBy('name')->get(), 'discogsConfigured' => app(DiscogsClient::class)->isConfigured()]);
     }
 
@@ -161,6 +179,9 @@ class RecordController extends Controller
             'sold' => $request->boolean('sold'),
             'lost' => $request->boolean('lost'),
         ];
+        if (! $data['sold']) {
+            $record->sold_to_user_id = null;
+        }
         $saveRecord($record, $data, $request->file('cover'), $request->boolean('remove_cover'));
         $warning = $this->coverFromDiscogs($request, $record, $covers);
 
@@ -171,6 +192,7 @@ class RecordController extends Controller
 
     public function destroy(Record $record)
     {
+        Gate::authorize('delete', $record);
         CoverStorage::delete($record);
         $record->prices()->delete();
         $record->delete();
@@ -184,6 +206,7 @@ class RecordController extends Controller
      */
     public function cover(Request $request, Record $record)
     {
+        Gate::authorize('view', $record);
         $path = CoverStorage::path($record, $request->boolean('thumb'));
         abort_if($path === null, 404);
 
@@ -232,7 +255,7 @@ class RecordController extends Controller
      */
     private function sellingQuery(): Builder
     {
-        return Record::where('selling', true)
+        return Record::visible()->where('selling', true)
             ->where('sold', false)
             ->orderBy('kind', 'ASC')
             ->orderBy('artist_id', 'ASC');
