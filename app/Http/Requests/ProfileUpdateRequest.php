@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ProfileUpdateRequest extends FormRequest
@@ -23,6 +24,12 @@ class ProfileUpdateRequest extends FormRequest
                 'email',
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
+            ],
+            // Changing the e-mail address (and with it the password reset) needs the password.
+            'current_password' => [
+                Rule::requiredIf(fn () => Str::lower(trim((string) $this->input('email'))) !== $this->user()->email),
+                'nullable',
+                'current_password',
             ],
         ];
     }

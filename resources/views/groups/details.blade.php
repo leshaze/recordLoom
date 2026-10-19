@@ -15,8 +15,10 @@
                 @if ($canPrint)
                     <a href="{{ route($resource.'.print', $item) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-pdf"></i> {{ __('PDF') }}</a>
                 @endif
-                <a href="{{ route($resource.'.edit', $item) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> {{ __('Bearbeiten') }}</a>
-                <x-delete-button :action="route($resource.'.destroy', $item)" :label="__('Löschen')" :message="str_replace(':name', $item->name, $texts['confirm_delete'])" />
+                @if ($canChange)
+                    <a href="{{ route($resource.'.edit', $item) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> {{ __('Bearbeiten') }}</a>
+                    <x-delete-button :action="route($resource.'.destroy', $item)" :label="__('Löschen')" :message="str_replace(':name', $item->name, $texts['confirm_delete'])" />
+                @endif
             </div>
         </div>
         @if ($item->description)

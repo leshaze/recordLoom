@@ -17,6 +17,11 @@ class CoverStorage
 
     private const THUMBNAIL_WIDTH = 300;
 
+    /**
+     * Larger images are not decoded for the thumbnail: a small file can unpack to gigabytes in memory.
+     */
+    private const MAX_PIXELS = 40_000_000;
+
     public static function store(Record $record, UploadedFile $file): void
     {
         self::delete($record);
@@ -31,7 +36,8 @@ class CoverStorage
      */
     public static function storeContents(Record $record, string $content, string $extension): void
     {
-        if (@getimagesizefromstring($content) === false) {
+        $size = @getimagesizefromstring($content);
+        if ($size === false || $size[0] * $size[1] > self::MAX_PIXELS) {
             throw new DiscogsException(__('Das Cover ist kein gültiges Bild.'));
         }
 
@@ -68,7 +74,8 @@ class CoverStorage
      */
     private static function thumbnail(UploadedFile $file, string $path): ?string
     {
-        if (! function_exists('imagecreatefromstring')) {
+        $size = @getimagesize($file->getRealPath());
+        if (! function_exists('imagecreatefromstring') || $size === false || $size[0] * $size[1] > self::MAX_PIXELS) {
             return null;
         }
 

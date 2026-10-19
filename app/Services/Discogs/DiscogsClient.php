@@ -19,6 +19,8 @@ class DiscogsClient
      */
     public const IMAGE_HOSTS = ['i.discogs.com', 'img.discogs.com', 'st.discogs.com'];
 
+    private const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+
     public function __construct(
         private readonly ?string $token,
         private readonly string $userAgent,
@@ -109,7 +111,11 @@ class DiscogsClient
         }
 
         // No redirects: the host check above must apply to the URL that is really fetched.
-        $response = $this->request()->withOptions(['allow_redirects' => false])->get($url);
+        // Streamed, so an announced size above the limit is refused before the body is loaded.
+        $response = $this->request()->withOptions(['allow_redirects' => false, 'stream' => true])->get($url);
+        if ((int) $response->header('Content-Length') > self::MAX_IMAGE_BYTES) {
+            throw new DiscogsException(__('Das Cover konnte nicht von Discogs geladen werden.'));
+        }
         $type = strtolower((string) $response->header('Content-Type'));
         $extension = match (true) {
             str_contains($type, 'png') => 'png',
@@ -119,7 +125,7 @@ class DiscogsClient
             default => null,
         };
 
-        if (! $response->successful() || $extension === null || strlen($response->body()) > 8 * 1024 * 1024) {
+        if (! $response->successful() || $extension === null || strlen($response->body()) > self::MAX_IMAGE_BYTES) {
             throw new DiscogsException(__('Das Cover konnte nicht von Discogs geladen werden.'));
         }
 

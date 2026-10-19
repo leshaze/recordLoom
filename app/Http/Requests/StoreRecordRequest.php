@@ -78,7 +78,7 @@ class StoreRecordRequest extends FormRequest
             'note' => ['nullable', 'string', 'max:5000'],
             'editions' => ['nullable', 'array'],
             'editions.*' => ['integer', 'exists:editions,id'],
-            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:8192'],
+            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:8192', 'dimensions:max_width=8000,max_height=8000'],
             'discogs_release_id' => ['nullable', 'integer', 'min:1'],
             'discogs_cover_url' => ['nullable', 'url:https', 'max:500'],
         ];

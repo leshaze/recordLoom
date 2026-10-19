@@ -58,7 +58,9 @@ abstract class GroupController extends Controller
         $filter = new GroupFilter($request, $this->model, $this->resource.'.index', $columns);
 
         return view('groups.index', [
-            'items' => $filter->query()->paginate($filter->values['per_page'])->withQueryString(),
+            'items' => $filter->query()
+                ->when(! $request->user()->isAdmin(), fn ($query) => $query->withExists(['records as used_by_others' => $this->foreignRecords($request)]))
+                ->paginate($filter->values['per_page'])->withQueryString(),
             'filter' => $filter,
         ] + $this->shared());
     }
@@ -77,6 +79,7 @@ abstract class GroupController extends Controller
             'item' => $item,
             'records' => $filter->query()->with(RecordController::LIST_RELATIONS)->paginate($filter->values['per_page'])->withQueryString(),
             'filter' => $filter,
+            'canChange' => $this->canChange($request, $item),
             'recordCount' => $item->records()->visibleTo($request->user())->count(),
             'totalValue' => $item->records()->visibleTo($request->user())->where('sold', false)->sum('current_price'),
             'labels' => $this->resource === 'labels' ? null : Label::orderBy('name')->get(['id', 'name']),
@@ -107,12 +110,16 @@ abstract class GroupController extends Controller
 
     public function edit(Request $request): View
     {
-        return view('groups.form', ['item' => $this->item($request)] + $this->shared());
+        $item = $this->item($request);
+        $this->authorizeChange($request, $item);
+
+        return view('groups.form', ['item' => $item] + $this->shared());
     }
 
     public function update(Request $request): RedirectResponse
     {
         $item = $this->item($request);
+        $this->authorizeChange($request, $item);
         $data = $request->validate($this->rules($item));
         $this->fill($item, $data);
 
@@ -122,6 +129,7 @@ abstract class GroupController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         $item = $this->item($request);
+        $this->authorizeChange($request, $item);
 
         if ($item->records()->exists()) {
             return redirect()->route($this->resource.'.index')->with('error', $this->text('in_use', $item->name));
@@ -172,6 +180,30 @@ abstract class GroupController extends Controller
             $item->url = $data['url'] ?? null;
         }
         $item->save();
+    }
+
+    /**
+     * Artists, labels and platforms are shared by all collections. Only admins may change or delete an entry
+     * that is used by records of other users, so nobody renames the entries of someone else's collection.
+     */
+    private function canChange(Request $request, Model $item): bool
+    {
+        return $request->user()->isAdmin() || ! $item->records()->where($this->foreignRecords($request))->exists();
+    }
+
+    private function authorizeChange(Request $request, Model $item): void
+    {
+        abort_unless($this->canChange($request, $item), 403, __('Dieser Eintrag wird auch von anderen Sammlungen benutzt. Nur ein Admin kann ihn ändern.'));
+    }
+
+    /**
+     * Records that do not belong to the current user (also those without owner).
+     */
+    private function foreignRecords(Request $request): \Closure
+    {
+        $id = $request->user()->id;
+
+        return fn ($query) => $query->where(fn ($query) => $query->whereNull('records.user_id')->orWhere('records.user_id', '!=', $id));
     }
 
     /**

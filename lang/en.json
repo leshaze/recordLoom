@@ -480,5 +480,7 @@
     "gleich hoch wie :name": "same as :name",
     ":name bietet mehr: :price": ":name offers more: :price",
     ":name bietet :price": ":name offers :price",
-    "Verkäufer (Liste)": "Sellers"
+    "Verkäufer (Liste)": "Sellers",
+    "Nur nötig, wenn du deine E-Mail-Adresse änderst.": "Only needed when you change your e-mail address.",
+    "Dieser Eintrag wird auch von anderen Sammlungen benutzt. Nur ein Admin kann ihn ändern.": "This entry is also used by other collections. Only an admin can change it."
 }

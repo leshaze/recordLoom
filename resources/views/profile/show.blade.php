@@ -67,6 +67,13 @@
                         class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $user->email) }}">
                     @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
+                <div class="mb-3">
+                    <label for="email_current_password" class="form-label">{{ __('Aktuelles Passwort') }}</label>
+                    <input type="password" name="current_password" id="email_current_password" autocomplete="current-password"
+                        class="form-control @error('current_password') is-invalid @enderror">
+                    @error('current_password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    <div class="form-text">{{ __('Nur nötig, wenn du deine E-Mail-Adresse änderst.') }}</div>
+                </div>
                 <button type="submit" class="btn btn-primary">{{ __('Speichern') }}</button>
             </form>
         </div>

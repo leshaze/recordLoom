@@ -83,8 +83,10 @@
                                         <td class="text-break">@if ($item->safe_url)<a href="{{ $item->safe_url }}" target="_blank" rel="noopener noreferrer">{{ $item->url }}</a>@endif</td>
                                     @endif
                                     <td class="text-end text-nowrap">
-                                        <a href="{{ route($resource.'.edit', $item) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Bearbeiten') }}" aria-label="{{ __('Bearbeiten') }}"><i class="bi bi-pencil-square"></i></a>
-                                        <x-delete-button :action="route($resource.'.destroy', $item)" :message="str_replace(':name', $item->name, $texts['confirm_delete'])" />
+                                        @unless ($item->used_by_others ?? false)
+                                            <a href="{{ route($resource.'.edit', $item) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Bearbeiten') }}" aria-label="{{ __('Bearbeiten') }}"><i class="bi bi-pencil-square"></i></a>
+                                            <x-delete-button :action="route($resource.'.destroy', $item)" :message="str_replace(':name', $item->name, $texts['confirm_delete'])" />
+                                        @endunless
                                     </td>
                                 </tr>
                             @endforeach

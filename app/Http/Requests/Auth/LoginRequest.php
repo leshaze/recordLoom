@@ -21,6 +21,16 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * E-mail addresses are stored in lower case.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('email'))) {
+            $this->merge(['email' => Str::lower(trim($this->input('email')))]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, Rule|array|string>

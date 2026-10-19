@@ -9,6 +9,7 @@ use App\Notifications\InterestChanged;
 use App\Notifications\Invitation;
 use App\Notifications\RecordSold;
 use App\Notifications\RecordWithdrawn;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 
 function ownedRecord(User $owner, array $attributes = []): Record
@@ -447,4 +448,40 @@ test('owners see the interest per seller on the dashboard and sell from the page
     // Not for sellers, and only sellers have a page.
     $this->actingAs($eva)->get(route('sellers.show', $tom))->assertForbidden();
     $this->actingAs($owner)->get(route('sellers.show', $other))->assertNotFound();
+});
+
+test('artists used by other collections can only be changed by admins', function () {
+    $anna = User::factory()->create();
+    $ben = User::factory()->create();
+    ownedRecord($anna);
+    $artist = Artist::firstWhere('name', 'Kraftwerk');
+    $own = Artist::create(['name' => 'Bens Band']);
+
+    $this->actingAs($ben)->get(route('artists.edit', $artist))->assertForbidden();
+    $this->actingAs($ben)->put(route('artists.update', $artist), ['artist_name' => 'Umbenannt'])->assertForbidden();
+    $this->actingAs($ben)->delete(route('artists.destroy', $artist))->assertForbidden();
+    $this->actingAs($ben)->get(route('artists.show', $artist))->assertOk()->assertDontSee(route('artists.edit', $artist));
+    $this->actingAs($ben)->get(route('artists.index'))->assertDontSee(route('artists.edit', $artist))->assertSee(route('artists.edit', $own));
+
+    $this->actingAs($anna)->get(route('artists.edit', $artist))->assertOk();
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin)->put(route('artists.update', $artist), ['artist_name' => 'Kraftwerk'])->assertRedirect(route('artists.index'));
+});
+
+test('the login ignores capitals in the e-mail address', function () {
+    $this->app['auth']->forgetGuards();
+    User::factory()->create(['email' => 'erika@example.com']);
+
+    $this->post(route('login'), ['email' => ' Erika@Example.COM', 'password' => 'password'])->assertRedirect(route('dashboard'));
+    $this->assertAuthenticated();
+});
+
+test('covers with huge dimensions are refused', function () {
+    $owner = User::factory()->create();
+    $record = ownedRecord($owner);
+
+    $this->actingAs($owner)->put(route('records.update', $record), [
+        'kind' => 'LP', 'title' => 'Autobahn', 'artist_name' => 'Kraftwerk', 'label_name' => 'Kling Klang',
+        'cover' => UploadedFile::fake()->image('riesig.png', 9000, 10),
+    ])->assertSessionHasErrors('cover');
 });

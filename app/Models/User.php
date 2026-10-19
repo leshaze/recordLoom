@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -89,6 +90,22 @@ class User extends Authenticatable
     public function notificationChannels(): array
     {
         return $this->mail_notifications ? ['database', 'mail'] : ['database'];
+    }
+
+    /**
+     * Logs the user out in all browsers (except the given session), e.g. after a password change.
+     * Only possible with sessions in the database; remember-me cookies end with the new remember token.
+     */
+    public function endSessions(?string $except = null): void
+    {
+        if (config('session.driver') !== 'database') {
+            return;
+        }
+
+        DB::connection(config('session.connection'))->table(config('session.table', 'sessions'))
+            ->where('user_id', $this->id)
+            ->when($except, fn ($query) => $query->where('id', '!=', $except))
+            ->delete();
     }
 
     /**
