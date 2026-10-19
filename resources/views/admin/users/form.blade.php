@@ -24,7 +24,7 @@
                 <legend class="form-label fs-6">{{ __('Rolle') }} <span class="text-danger">*</span></legend>
                 @foreach ([
                     [\App\Enums\Role::User, __('Hat eine eigene Sammlung und kann Platten Verkäufern zuweisen und an sie verkaufen.')],
-                    [\App\Enums\Role::Seller, __('Sieht nur die ihm zugewiesenen Platten (ohne Kaufpreis und Notiz) und kann Interesse anmelden.')],
+                    [\App\Enums\Role::Seller, __('Sieht zugewiesene und zum Verkauf vorgemerkte Platten (ohne Kaufpreis und Notiz) und kann Interesse anmelden.')],
                     [\App\Enums\Role::Admin, __('Sieht alle Platten und verwaltet Benutzer und Zusatzinfos.')],
                 ] as [$role, $description])
                     <div class="form-check mb-1">
@@ -37,6 +37,15 @@
                 @endforeach
                 @error('role') <div class="text-danger small">{{ $message }}</div> @enderror
             </fieldset>
+            <div class="form-check mb-3">
+                <input type="hidden" name="sees_all_records" value="0">
+                <input class="form-check-input" type="checkbox" name="sees_all_records" value="1" id="sees_all_records"
+                    @checked(old('sees_all_records', $user?->sees_all_records))>
+                <label class="form-check-label" for="sees_all_records">
+                    {{ __('Alle Platten anzeigen') }}
+                    <span class="small text-body-secondary d-block">{{ __('Nur für Verkäufer: sieht alle Platten, die nicht verkauft sind, auch ohne Zuweisung und ohne „Zum Verkauf vormerken“, und kann Interesse anmelden.') }}</span>
+                </label>
+            </div>
             @unless ($user)
                 <p class="small text-body-secondary">{{ __('Der Benutzer bekommt eine E-Mail mit einem Link, über den er sein Passwort festlegt.') }}</p>
             @endunless

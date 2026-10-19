@@ -15,16 +15,16 @@ class DashboardController extends Controller
         $user = $request->user();
 
         if ($user->isSeller()) {
-            // Assigned records and all records marked for selling, with the seller's own interest.
-            $records = Record::visible()
-                ->with(['artist', 'label', 'editions', 'sellers' => fn ($query) => $query->whereKey($user->id)])
-                ->latest()->latest('id')->get();
-            $interest = fn (Record $record) => $record->sellers->first()?->pivot->interested_at;
+            // Records the seller can see, with the own interest. Counted by the database: a seller who sees
+            // all records would otherwise load the whole collection.
+            $open = Record::visible()->where('sold', false);
 
             return view('dashboard-seller', [
-                'open' => $records->where('sold', false),
-                'interested' => $records->where('sold', false)->filter($interest)->count(),
-                'bought' => $records->where('sold_to_user_id', $user->id),
+                'open' => (clone $open)->with(['artist', 'label', 'editions', 'sellers' => fn ($query) => $query->whereKey($user->id)])
+                    ->latest()->latest('id')->take(10)->get(),
+                'openCount' => (clone $open)->count(),
+                'interested' => (clone $open)->whereHas('sellers', fn ($query) => $query->whereKey($user->id)->whereNotNull('record_seller.interested_at'))->count(),
+                'boughtCount' => Record::where('sold_to_user_id', $user->id)->count(),
                 'notifications' => $user->notifications()->latest()->take(5)->get(),
             ]);
         }

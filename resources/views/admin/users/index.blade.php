@@ -33,6 +33,9 @@
                                 <td class="text-break">{{ $user->email }}</td>
                                 <td>
                                     <span @class(['badge', 'text-bg-danger' => $user->isAdmin(), 'text-bg-warning' => $user->isSeller(), 'text-bg-primary' => ! $user->isAdmin() && ! $user->isSeller()])>{{ $user->role->label() }}</span>
+                                    @if ($user->seesAllRecords())
+                                        <span class="badge text-bg-light border">{{ __('sieht alle Platten') }}</span>
+                                    @endif
                                 </td>
                                 <td class="text-end">
                                     @if ($user->records_count)

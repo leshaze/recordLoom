@@ -18,7 +18,7 @@ class RecordWithdrawn extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return $notifiable->notificationChannels();
     }
 
     public function toMail(object $notifiable): MailMessage

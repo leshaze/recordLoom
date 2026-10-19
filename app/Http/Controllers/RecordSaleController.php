@@ -107,7 +107,9 @@ class RecordSaleController extends Controller
         } elseif ($assignment) {
             $record->sellers()->updateExistingPivot($seller->id, ['interested_at' => null, 'offer_price' => null]);
         }
-        $record->owner?->notify(new InterestChanged($record, $seller, $kind, $interested ? $offer : null));
+        if ($record->owner) {
+            $this->notify($record->owner, new InterestChanged($record, $seller, $kind, $interested ? $offer : null));
+        }
 
         return back()->with('info', match ($kind) {
             'offer' => __('Dein Preisvorschlag wurde gespeichert.'),

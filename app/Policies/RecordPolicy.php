@@ -7,7 +7,7 @@ use App\Models\User;
 
 /**
  * Admins may do everything, users only with their own records. Sellers may see the records assigned to them
- * and all records marked for selling, and register interest in them.
+ * and all records marked for selling (or all records that are not sold, when the admin allows it), and register interest in them.
  */
 class RecordPolicy
 {
@@ -15,7 +15,7 @@ class RecordPolicy
     {
         return $user->isAdmin()
             || $record->user_id === $user->id
-            || ($user->isSeller() && ($this->isOffered($record) || $this->isAssigned($user, $record)));
+            || ($user->isSeller() && ($this->isOffered($user, $record) || $this->isAssigned($user, $record)));
     }
 
     public function create(User $user): bool
@@ -38,15 +38,15 @@ class RecordPolicy
 
     public function interest(User $user, Record $record): bool
     {
-        return $user->isSeller() && ! $record->sold && ($this->isOffered($record) || $this->isAssigned($user, $record));
+        return $user->isSeller() && ! $record->sold && ($this->isOffered($user, $record) || $this->isAssigned($user, $record));
     }
 
     /**
-     * Marked for selling: visible to all sellers.
+     * Marked for selling: visible to all sellers. Sellers who see all records see every record that is not sold.
      */
-    private function isOffered(Record $record): bool
+    private function isOffered(User $user, Record $record): bool
     {
-        return $record->selling && ! $record->sold;
+        return ! $record->sold && ($record->selling || $user->seesAllRecords());
     }
 
     private function isAssigned(User $user, Record $record): bool

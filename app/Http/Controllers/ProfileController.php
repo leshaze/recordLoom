@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * The own profile: basic information, name, e-mail and password.
+ * The own profile: basic information, name, e-mail, password and whether notifications also come by mail.
  */
 class ProfileController extends Controller
 {
@@ -34,5 +34,16 @@ class ProfileController extends Controller
         $user->save();
 
         return redirect()->route('profile.show')->with('info', __('Dein Profil wurde gespeichert.'));
+    }
+
+    public function notifications(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $user->mail_notifications = $request->boolean('mail_notifications');
+        $user->save();
+
+        return redirect()->route('profile.show')->with('info', $user->mail_notifications
+            ? __('Du bekommst Benachrichtigungen jetzt auch per E-Mail.')
+            : __('Du bekommst Benachrichtigungen jetzt nur noch in der App.'));
     }
 }

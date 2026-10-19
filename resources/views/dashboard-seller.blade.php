@@ -4,9 +4,9 @@
 
         <div class="row row-cols-1 row-cols-sm-3 g-3 mb-4">
             @foreach ([
-                [__('Für dich verfügbar'), $open->count(), 'bi-vinyl', route('records.index', ['status' => 'available'])],
+                [__('Für dich verfügbar'), $openCount, 'bi-vinyl', route('records.index', ['status' => 'available'])],
                 [__('Mit deinem Interesse'), $interested, 'bi-star-fill', null],
-                [__('An dich verkauft'), $bought->count(), 'bi-bag-check', route('records.index', ['status' => 'sold'])],
+                [__('An dich verkauft'), $boughtCount, 'bi-bag-check', route('records.index', ['status' => 'sold'])],
             ] as [$label, $value, $icon, $url])
                 <div class="col">
                     <div class="card h-100 position-relative">
@@ -33,7 +33,7 @@
                         <div class="card-body text-body-secondary">{{ __('Zurzeit sind keine Platten für dich verfügbar.') }}</div>
                     @else
                         <div class="list-group list-group-flush">
-                            @foreach ($open->take(10) as $record)
+                            @foreach ($open as $record)
                                 <a href="{{ route('records.show', $record) }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                                     <x-cover :record="$record" :size="40" class="flex-shrink-0" />
                                     <div class="flex-grow-1" style="min-width: 0;">

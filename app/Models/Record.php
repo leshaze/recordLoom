@@ -109,7 +109,8 @@ class Record extends Model
             $user->isAdmin() => $query,
             $user->isSeller() => $query->where(fn (Builder $query) => $query
                 ->whereHas('sellers', fn (Builder $query) => $query->whereKey($user->id))
-                ->orWhere(fn (Builder $query) => $query->where('records.selling', true)->where('records.sold', false))),
+                ->orWhere(fn (Builder $query) => $query->where('records.sold', false)
+                    ->when(! $user->seesAllRecords(), fn (Builder $query) => $query->where('records.selling', true)))),
             default => $query->where('records.user_id', $user->id),
         };
     }

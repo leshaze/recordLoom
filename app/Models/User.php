@@ -28,6 +28,16 @@ class User extends Authenticatable
     ];
 
     /**
+     * Defaults of new users, like in the database.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'mail_notifications' => true,
+        'sees_all_records' => false,
+    ];
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var array<int, string>
@@ -48,6 +58,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => Role::class,
+            'mail_notifications' => 'boolean',
+            'sees_all_records' => 'boolean',
         ];
     }
 
@@ -59,6 +71,24 @@ class User extends Authenticatable
     public function isSeller(): bool
     {
         return $this->role === Role::Seller;
+    }
+
+    /**
+     * A seller the admin allowed to see all records that are not sold.
+     */
+    public function seesAllRecords(): bool
+    {
+        return $this->isSeller() && $this->sees_all_records;
+    }
+
+    /**
+     * Channels of the notifications for this user: always in the app, by mail when the user wants it.
+     *
+     * @return list<string>
+     */
+    public function notificationChannels(): array
+    {
+        return $this->mail_notifications ? ['database', 'mail'] : ['database'];
     }
 
     /**

@@ -14,6 +14,10 @@
                 @if ($user->isSeller())
                     <dt class="col-5 col-sm-4 fw-normal text-body-secondary">{{ __('Dir zugewiesen') }}</dt>
                     <dd class="col-7 col-sm-8"><a href="{{ route('records.index') }}">{{ trans_choice(':count Platte|:count Platten', $assignedCount) }}</a></dd>
+                    @if ($user->sees_all_records)
+                        <dt class="col-5 col-sm-4 fw-normal text-body-secondary">{{ __('Sichtbar') }}</dt>
+                        <dd class="col-7 col-sm-8">{{ __('Du siehst alle Platten, die noch nicht verkauft sind.') }}</dd>
+                    @endif
                     <dt class="col-5 col-sm-4 fw-normal text-body-secondary">{{ __('An dich verkauft') }}</dt>
                     <dd class="col-7 col-sm-8">{{ trans_choice(':count Platte|:count Platten', $boughtCount) }}</dd>
                 @else
@@ -23,6 +27,27 @@
                 <dt class="col-5 col-sm-4 fw-normal text-body-secondary">{{ __('Benachrichtigungen') }}</dt>
                 <dd class="col-7 col-sm-8"><a href="{{ route('notifications.index') }}">{{ __(':count ungelesen', ['count' => $unreadCount]) }}</a></dd>
             </dl></div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">{{ __('Benachrichtigungen') }}</div>
+            <form method="POST" action="{{ route('profile.notifications') }}" class="card-body">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="mail_notifications" value="0">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" name="mail_notifications" value="1" id="mail_notifications"
+                        @checked($user->mail_notifications) data-auto-submit>
+                    <label class="form-check-label" for="mail_notifications">
+                        {{ __('Benachrichtigungen auch per E-Mail') }}
+                        <span class="small text-body-secondary d-block">{{ $user->isSeller()
+                            ? __('Wenn eine Platte, für die du Interesse angemeldet hast, verkauft oder nicht mehr verkauft wird.')
+                            : __('Wenn ein Verkäufer Interesse an einer deiner Platten anmeldet, zurücknimmt oder seinen Preisvorschlag ändert.') }}
+                            {{ __('In der App erscheinen die Benachrichtigungen immer.') }}</span>
+                    </label>
+                </div>
+                <noscript><button type="submit" class="btn btn-sm btn-primary mt-2">{{ __('Speichern') }}</button></noscript>
+            </form>
         </div>
 
         <div class="card mb-3">

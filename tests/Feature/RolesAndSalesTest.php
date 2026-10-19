@@ -5,6 +5,7 @@ use App\Models\Artist;
 use App\Models\Label;
 use App\Models\Record;
 use App\Models\User;
+use App\Notifications\InterestChanged;
 use App\Notifications\Invitation;
 use App\Notifications\RecordSold;
 use App\Notifications\RecordWithdrawn;
@@ -232,7 +233,7 @@ test('records marked for selling are visible to all sellers, who can register in
     $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 1])->assertSessionHas('info');
     $pivot = $record->sellers()->whereKey($eva->id)->first()->pivot;
     expect($pivot->assigned)->toBeFalse()->and($pivot->interested_at)->not->toBeNull();
-    $this->actingAs($owner)->get(route('records.show', $record))->assertSee('Verkaufen an Eva')->assertSee('über „Zum Verkauf“');
+    $this->actingAs($owner)->get(route('records.show', $record))->assertSee('Verkaufen an Eva')->assertSee('nicht zugewiesen');
 
     // Withdrawing removes the row again.
     $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 0]);
@@ -345,4 +346,66 @@ test('the withdrawn notification is shown to the seller', function () {
 
     $this->actingAs($eva)->get(route('notifications.index'))
         ->assertSee('„Autobahn“ von Kraftwerk wird nicht mehr verkauft. Dein Interesse wurde gelöscht.');
+});
+
+test('users switch notification mails off in their profile', function () {
+    Notification::fake();
+    $owner = User::factory()->create();
+    [$eva, $tom] = User::factory()->seller()->count(2)->create();
+    $record = ownedRecord($owner, ['selling' => true]);
+
+    expect($eva->mail_notifications)->toBeTrue();
+    $this->actingAs($eva)->get(route('profile.show'))->assertSee('Benachrichtigungen auch per E-Mail');
+    $this->actingAs($eva)->put(route('profile.notifications'), ['mail_notifications' => '0'])
+        ->assertSessionHas('info', 'Du bekommst Benachrichtigungen jetzt nur noch in der App.');
+    expect($eva->fresh()->mail_notifications)->toBeFalse();
+
+    // The owner gets interest by mail too, as long as it is switched on.
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 1, 'offer_price' => '15']);
+    $this->actingAs($tom)->post(route('records.interest', $record), ['interested' => 1]);
+    Notification::assertSentTo($owner, InterestChanged::class, fn ($notification, array $channels) => $channels === ['database', 'mail']);
+
+    $this->actingAs($owner)->post(route('records.sell', $record), ['seller_id' => $tom->id, 'sold_on' => '2026-10-21']);
+    Notification::assertSentTo($eva, RecordSold::class, fn ($notification, array $channels) => $channels === ['database']);
+    Notification::assertSentTo($tom, RecordSold::class, fn ($notification, array $channels) => $channels === ['database', 'mail']);
+});
+
+test('the interest mail to the owner names the offer', function () {
+    $owner = User::factory()->create(['name' => 'Anna']);
+    $eva = User::factory()->seller()->create(['name' => 'Eva']);
+    $record = ownedRecord($owner, ['selling' => true]);
+
+    $mail = (new InterestChanged($record, $eva, 'interest', '15.00'))->toMail($owner);
+    expect($mail->introLines)->toBe(['Eva hat Interesse an „Autobahn“ von Kraftwerk angemeldet und bietet 15,00 €.']);
+});
+
+test('admins let a seller see all records that are not sold', function () {
+    $owner = User::factory()->create();
+    $eva = User::factory()->seller()->create();
+    $open = ownedRecord($owner, ['title' => 'Offene Platte']);
+    $sold = ownedRecord($owner, ['title' => 'Verkaufte Platte', 'sold' => true]);
+
+    $this->actingAs($eva)->get(route('records.show', $open))->assertForbidden();
+
+    // Only admins set it, in the user form.
+    $this->actingAs($owner)->put(route('admin.users.update', $eva), ['name' => $eva->name, 'email' => $eva->email, 'role' => 'seller', 'sees_all_records' => '1'])->assertForbidden();
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin)->get(route('admin.users.edit', $eva))->assertSee('Alle Platten anzeigen');
+    $this->actingAs($admin)->put(route('admin.users.update', $eva), ['name' => $eva->name, 'email' => $eva->email, 'role' => 'seller', 'sees_all_records' => '1'])
+        ->assertRedirect(route('admin.users.index'));
+    $eva = $eva->fresh();
+    expect($eva->sees_all_records)->toBeTrue();
+    $this->actingAs($admin)->get(route('admin.users.index'))->assertSee('sieht alle Platten');
+
+    // Eva sees the record and can register interest, but not the sold one.
+    $this->actingAs($eva)->get(route('records.index'))->assertSee('Offene Platte')->assertDontSee('Verkaufte Platte');
+    $this->actingAs($eva)->get('/')->assertSee('Offene Platte');
+    $this->actingAs($eva)->get(route('records.show', $sold))->assertForbidden();
+    $this->actingAs($eva)->post(route('records.interest', $open), ['interested' => 1])->assertSessionHas('info');
+    $this->actingAs($owner)->get(route('records.show', $open))->assertSee('Verkaufen an '.$eva->name)->assertSee('nicht zugewiesen');
+    $this->actingAs($eva)->get(route('profile.show'))->assertSee('Du siehst alle Platten, die noch nicht verkauft sind.');
+
+    // Switched off again: only assigned and offered records.
+    $this->actingAs($admin)->put(route('admin.users.update', $eva), ['name' => $eva->name, 'email' => $eva->email, 'role' => 'seller']);
+    expect($eva->fresh()->sees_all_records)->toBeFalse();
 });

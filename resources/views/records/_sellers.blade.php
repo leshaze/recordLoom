@@ -43,7 +43,7 @@
                     <li class="list-group-item d-flex flex-wrap align-items-center gap-2">
                         <span class="fw-semibold">{{ $seller->name }}</span>
                         @unless ($seller->pivot->assigned)
-                            <span class="small text-body-secondary">({{ __('über „Zum Verkauf“') }})</span>
+                            <span class="small text-body-secondary">({{ __('nicht zugewiesen') }})</span>
                         @endunless
                         @if ($seller->pivot->interested_at)
                             <span class="badge text-bg-warning"><i class="bi bi-star-fill"></i>

@@ -40,6 +40,7 @@ class UserController extends Controller
         $user->name = $data['name'];
         $user->email = strtolower($data['email']);
         $user->role = Role::from($data['role']);
+        $user->sees_all_records = $request->boolean('sees_all_records');
         // Unusable until the user sets his own password through the invitation.
         $user->password = Str::random(64);
         $user->save();
@@ -67,6 +68,7 @@ class UserController extends Controller
         $user->name = $data['name'];
         $user->email = strtolower($data['email']);
         $user->role = $role;
+        $user->sees_all_records = $request->boolean('sees_all_records');
         $user->save();
 
         return redirect()->route('admin.users.index')->with('info', __('Benutzer :name wurde gespeichert.', ['name' => $user->name]));
@@ -125,6 +127,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user)],
             'role' => ['required', Rule::enum(Role::class)],
+            'sees_all_records' => ['boolean'],
         ];
     }
 }

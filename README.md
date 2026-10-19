@@ -20,13 +20,18 @@ they get an e-mail with a link to set their password (valid for 3 days, `AUTH_PA
 | --- | --- |
 | **Admin** | everything: all records (filter *Besitzer*), users, Zusatzinfos |
 | **Benutzer** | an own collection (records, CSV, Discogs, PDF); artists, labels and vendors are shared |
-| **Verkäufer** | the records assigned to him and all records marked for selling, without buy price, vendor, note and price history; registers interest |
+| **Verkäufer** | the records assigned to them and all records marked for selling (or all records that are not sold, when an admin ticks "Alle Platten anzeigen" for them), without buy price, vendor, note and price history; registers interest |
 
 Selling to sellers: on the page of a record (card "Verkäufer & Interesse") the owner or an admin switches on
 "Zum Verkauf vormerken", then all sellers see the record, and/or assigns it to single sellers. Sellers register
-or withdraw their interest. The owner sells to one of the interested sellers (sale price and date): the record is
-marked as sold, the buyer and all other interested sellers are notified in the app (bell) and by e-mail. The owner
-is notified in the app when a seller registers or withdraws interest.
+or withdraw their interest, optionally with the price they offer. The owner sees all offers and sells to one of
+the interested sellers (sale price and date): the record is marked as sold, the buyer and all other interested
+sellers are notified. Switching "Zum Verkauf vormerken" off deletes all interest and offers and tells the
+interested sellers that the record is no longer for sale. The owner is notified when a seller registers or
+withdraws interest or changes the offer.
+
+Notifications always appear in the app (bell). Each user decides in the profile whether they also come by e-mail
+(on by default).
 
 **First admin** (also after updating an existing installation): records from before the login have no owner yet
 and become the collection of the first admin.
