@@ -59,8 +59,13 @@ $(function() {
         $('#sold-fields').toggleClass('d-none', !this.checked);
     });
 
-    // Filters in the record list are applied immediately.
+    // Filters and switches are applied immediately; switching off can ask first (data-confirm-off).
     $('[data-auto-submit]').on('change', function() {
+        const question = this.dataset.confirmOff;
+        if (question && !this.checked && !window.confirm(question)) {
+            this.checked = true;
+            return;
+        }
         this.form.requestSubmit();
     });
 

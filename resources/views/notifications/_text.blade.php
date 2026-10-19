@@ -7,6 +7,7 @@
     [$icon, $text] = match ($data['kind'] ?? null) {
         'sold_to_you' => ['bi-bag-check text-success', __('„:title“ von :artist wurde an dich verkauft.', $replace)],
         'sold_to_other' => ['bi-x-circle text-body-secondary', __('„:title“ von :artist wurde an jemand anderen verkauft.', $replace)],
+        'withdrawn' => ['bi-x-circle text-body-secondary', __('„:title“ von :artist wird nicht mehr verkauft. Dein Interesse wurde gelöscht.', $replace)],
         'interest' => ['bi-star-fill text-warning', $offered
             ? __(':seller hat Interesse an „:title“ von :artist angemeldet und bietet :offer.', $replace)
             : __(':seller hat Interesse an „:title“ von :artist angemeldet.', $replace)],

@@ -7,8 +7,10 @@ use App\Models\Record;
 use App\Models\User;
 use App\Notifications\InterestChanged;
 use App\Notifications\RecordSold;
+use App\Notifications\RecordWithdrawn;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -44,7 +46,8 @@ class RecordSaleController extends Controller
     }
 
     /**
-     * "Zum Verkauf vormerken": the record is shown to all sellers.
+     * "Zum Verkauf vormerken": the record is shown to all sellers. Switching it off clears all interest and offers;
+     * the interested sellers are told that the record is no longer for sale.
      */
     public function selling(Request $request, Record $record): RedirectResponse
     {
@@ -52,11 +55,30 @@ class RecordSaleController extends Controller
         abort_if($record->sold, 422, __('Die Platte ist bereits verkauft.'));
 
         $record->selling = $request->boolean('selling');
-        $record->save();
+        $interested = $record->selling ? collect() : $record->sellers()->wherePivotNotNull('interested_at')->get();
 
-        return back()->with('info', $record->selling
-            ? __('Die Platte ist zum Verkauf vorgemerkt und für alle Verkäufer sichtbar.')
-            : __('Die Platte ist nicht mehr zum Verkauf vorgemerkt.'));
+        DB::transaction(function () use ($record, $interested) {
+            $record->save();
+            // Assigned sellers keep their assignment, the others lose their access with the interest.
+            foreach ($interested as $seller) {
+                $seller->pivot->assigned
+                    ? $record->sellers()->updateExistingPivot($seller->id, ['interested_at' => null, 'offer_price' => null])
+                    : $record->sellers()->detach($seller->id);
+            }
+        });
+
+        $mailFailed = false;
+        foreach ($interested as $seller) {
+            $mailFailed = ! $this->notify($seller, new RecordWithdrawn($record)) || $mailFailed;
+        }
+
+        return back()
+            ->with('info', match (true) {
+                $record->selling => __('Die Platte ist zum Verkauf vorgemerkt und für alle Verkäufer sichtbar.'),
+                $interested->isNotEmpty() => __('Die Platte ist nicht mehr zum Verkauf vorgemerkt. Die Interessenten wurden benachrichtigt.'),
+                default => __('Die Platte ist nicht mehr zum Verkauf vorgemerkt.'),
+            })
+            ->with('warning', $mailFailed ? __('Die Benachrichtigung steht in der App, die E-Mail konnte aber nicht verschickt werden.') : null);
     }
 
     /**
@@ -145,7 +167,7 @@ class RecordSaleController extends Controller
     /**
      * The notification is stored in the app first; a failing mail server must not stop the sale.
      */
-    private function notify(User $user, RecordSold $notification): bool
+    private function notify(User $user, Notification $notification): bool
     {
         try {
             $user->notify($notification);

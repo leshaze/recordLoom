@@ -15,7 +15,10 @@
                 <input type="hidden" name="selling" value="0">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" role="switch" name="selling" value="1" id="selling-switch"
-                        @checked($record->selling) data-auto-submit>
+                        @checked($record->selling) data-auto-submit
+                        @if ($record->selling && $sellers->contains(fn ($seller) => $seller->pivot->interested_at))
+                            data-confirm-off="{{ __('Alle Interessenten und ihre Preisvorschläge werden gelöscht und benachrichtigt, dass die Platte nicht mehr verkauft wird. Fortfahren?') }}"
+                        @endif>
                     <label class="form-check-label" for="selling-switch">
                         {{ __('Zum Verkauf vormerken') }}
                         <span class="small text-body-secondary d-block">{{ __('Die Platte ist dann für alle Verkäufer sichtbar und jeder kann Interesse anmelden.') }}</span>

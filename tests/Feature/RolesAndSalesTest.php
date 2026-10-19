@@ -7,6 +7,7 @@ use App\Models\Record;
 use App\Models\User;
 use App\Notifications\Invitation;
 use App\Notifications\RecordSold;
+use App\Notifications\RecordWithdrawn;
 use Illuminate\Support\Facades\Notification;
 
 function ownedRecord(User $owner, array $attributes = []): Record
@@ -308,4 +309,40 @@ test('sellers can offer a price that the owner sees when choosing the buyer', fu
 
     // Sellers do not see the offers of others.
     $this->actingAs($tom)->get(route('records.show', $record))->assertDontSee('25,50');
+});
+
+test('switching "for selling" off deletes all interest and tells the interested sellers', function () {
+    Notification::fake();
+    $owner = User::factory()->create();
+    [$eva, $tom, $ida] = User::factory()->seller()->count(3)->sequence(['name' => 'Eva'], ['name' => 'Tom'], ['name' => 'Ida'])->create();
+    $record = ownedRecord($owner, ['selling' => true]);
+    $record->sellers()->attach($tom);
+    $record->sellers()->attach($ida);
+
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 1, 'offer_price' => '20']);
+    $this->actingAs($tom)->post(route('records.interest', $record), ['interested' => 1, 'offer_price' => '25']);
+    $this->actingAs($owner)->get(route('records.show', $record))->assertSee('data-confirm-off', false);
+
+    $this->actingAs($owner)->put(route('records.selling', $record), ['selling' => '0'])
+        ->assertSessionHas('info', 'Die Platte ist nicht mehr zum Verkauf vorgemerkt. Die Interessenten wurden benachrichtigt.');
+
+    // Eva (only via "for selling") is removed; Tom and Ida stay assigned, without interest or offer.
+    expect($record->sellers()->pluck('users.id')->sort()->values()->all())->toBe([$tom->id, $ida->id]);
+    $pivot = $record->sellers()->whereKey($tom->id)->first()->pivot;
+    expect($pivot->interested_at)->toBeNull()->and($pivot->offer_price)->toBeNull();
+
+    Notification::assertSentTo([$eva, $tom], RecordWithdrawn::class);
+    Notification::assertNotSentTo($ida, RecordWithdrawn::class);
+    $this->actingAs($eva)->get(route('records.show', $record))->assertForbidden();
+});
+
+test('the withdrawn notification is shown to the seller', function () {
+    $owner = User::factory()->create();
+    $eva = User::factory()->seller()->create();
+    $record = ownedRecord($owner, ['selling' => true]);
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 1]);
+    $this->actingAs($owner)->put(route('records.selling', $record), ['selling' => '0']);
+
+    $this->actingAs($eva)->get(route('notifications.index'))
+        ->assertSee('„Autobahn“ von Kraftwerk wird nicht mehr verkauft. Dein Interesse wurde gelöscht.');
 });

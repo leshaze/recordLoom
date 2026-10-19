@@ -451,5 +451,10 @@
     "höchstes Gebot": "highest offer",
     "ohne Preisvorschlag": "no offer",
     "Preisvorschlag von :name": "Offer from :name",
-    "Dein Preisvorschlag wurde gespeichert.": "Your offer was saved."
+    "Dein Preisvorschlag wurde gespeichert.": "Your offer was saved.",
+    "„:title“ von :artist wird nicht mehr verkauft. Dein Interesse wurde gelöscht.": "“:title” by :artist is no longer for sale. Your interest was deleted.",
+    "Alle Interessenten und ihre Preisvorschläge werden gelöscht und benachrichtigt, dass die Platte nicht mehr verkauft wird. Fortfahren?": "All interested sellers and their offers will be deleted, and they will be told that the record is no longer for sale. Continue?",
+    "Die Platte ist nicht mehr zum Verkauf vorgemerkt. Die Interessenten wurden benachrichtigt.": "The record is no longer marked for selling. The interested sellers were notified.",
+    "„:title“ wird nicht mehr verkauft": "“:title” is no longer for sale",
+    "die Platte „:title“ von :artist, für die du Interesse angemeldet hast, wird nicht mehr verkauft. Dein Interesse und dein Preisvorschlag wurden gelöscht.": "the record “:title” by :artist you were interested in is no longer for sale. Your interest and your offer were deleted."
 }
