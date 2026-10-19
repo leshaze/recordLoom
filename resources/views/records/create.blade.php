@@ -4,6 +4,9 @@
         <form action="{{ route('records.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             @include('records._form')
+            <div id="duplicate-warning" data-url="{{ route('records.duplicates') }}">
+                @include('records._duplicates')
+            </div>
             <div class="d-flex gap-2 mb-4">
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> {{ __('Speichern') }}</button>
                 <a href="{{ route('records.index') }}" class="btn btn-outline-secondary">{{ __('Abbrechen') }}</a>

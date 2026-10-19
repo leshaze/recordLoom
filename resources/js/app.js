@@ -3,6 +3,7 @@ import 'jquery-ui/dist/jquery-ui';
 import { Toast } from 'bootstrap';
 import { initDiscogs, initDiscogsMatching, initDiscogsReview } from './discogs';
 import { initBarcodeButtons } from './barcode-scanner';
+import { initDuplicateWarning } from './duplicates';
 
 const autocompleteUrl = document.body.dataset.autocompleteUrl;
 
@@ -38,6 +39,7 @@ $(function() {
     initDiscogs();
     initDiscogsMatching();
     initDiscogsReview();
+    initDuplicateWarning();
 
     // Messages (session flash) are shown as toasts.
     document.querySelectorAll('.toast').forEach(element => new Toast(element).show());
