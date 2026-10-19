@@ -7,11 +7,12 @@ use App\Models\User;
 use Illuminate\Notifications\Notification;
 
 /**
- * Tells the owner of a record (in the app only) that a seller registered or withdrew interest.
+ * Tells the owner of a record (in the app only) that a seller registered or withdrew interest or changed the offer.
+ * Kinds: interest, interest_withdrawn, offer.
  */
 class InterestChanged extends Notification
 {
-    public function __construct(private Record $record, private User $seller, private bool $interested) {}
+    public function __construct(private Record $record, private User $seller, private string $kind, private ?string $offer = null) {}
 
     /**
      * @return list<string>
@@ -27,11 +28,12 @@ class InterestChanged extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'kind' => $this->interested ? 'interest' : 'interest_withdrawn',
+            'kind' => $this->kind,
             'record_id' => $this->record->id,
             'title' => $this->record->title,
             'artist' => $this->record->artist->name,
             'seller' => $this->seller->name,
+            'offer' => $this->offer,
         ];
     }
 }

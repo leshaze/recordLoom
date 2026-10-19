@@ -79,7 +79,7 @@ class Record extends Model
      */
     public function sellers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'record_seller')->using(RecordSeller::class)->withPivot('interested_at', 'assigned')->withTimestamps()->orderBy('name');
+        return $this->belongsToMany(User::class, 'record_seller')->using(RecordSeller::class)->withPivot('interested_at', 'assigned', 'offer_price')->withTimestamps()->orderBy('name');
     }
 
     /**

@@ -16,6 +16,7 @@ class RecordSeller extends Pivot
         return [
             'interested_at' => 'datetime',
             'assigned' => 'boolean',
+            'offer_price' => 'decimal:2',
         ];
     }
 }

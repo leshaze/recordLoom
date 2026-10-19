@@ -59,26 +59,39 @@ class RecordSaleController extends Controller
             : __('Die Platte ist nicht mehr zum Verkauf vorgemerkt.'));
     }
 
+    /**
+     * A seller registers interest, optionally with the price they offer, changes the offer, or withdraws.
+     */
     public function interest(Request $request, Record $record): RedirectResponse
     {
         Gate::authorize('interest', $record);
+        $offer = $this->price($request, 'offer_price', __('Dein Preisvorschlag'));
         $interested = $request->boolean('interested');
         $seller = $request->user();
         $assignment = $record->sellers()->whereKey($seller->id)->first()?->pivot;
+        $kind = $interested ? 'interest' : 'interest_withdrawn';
 
-        if ($interested) {
+        if ($interested && $assignment?->interested_at) {
+            // Already interested: only the offer changes, the date of the interest stays.
+            $record->sellers()->updateExistingPivot($seller->id, ['offer_price' => $offer]);
+            $kind = 'offer';
+        } elseif ($interested) {
             // Sellers of a record marked for selling get a row without being assigned.
-            $record->sellers()->syncWithoutDetaching([$seller->id => ['interested_at' => now(), 'assigned' => $assignment->assigned ?? false]]);
+            $record->sellers()->syncWithoutDetaching([$seller->id => [
+                'interested_at' => now(), 'offer_price' => $offer, 'assigned' => $assignment->assigned ?? false,
+            ]]);
         } elseif ($assignment && ! $assignment->assigned) {
             $record->sellers()->detach($seller->id);
         } elseif ($assignment) {
-            $record->sellers()->updateExistingPivot($seller->id, ['interested_at' => null]);
+            $record->sellers()->updateExistingPivot($seller->id, ['interested_at' => null, 'offer_price' => null]);
         }
-        $record->owner?->notify(new InterestChanged($record, $seller, $interested));
+        $record->owner?->notify(new InterestChanged($record, $seller, $kind, $interested ? $offer : null));
 
-        return back()->with('info', $interested
-            ? __('Dein Interesse wurde angemeldet.')
-            : __('Dein Interesse wurde zurückgenommen.'));
+        return back()->with('info', match ($kind) {
+            'offer' => __('Dein Preisvorschlag wurde gespeichert.'),
+            'interest' => __('Dein Interesse wurde angemeldet.'),
+            default => __('Dein Interesse wurde zurückgenommen.'),
+        });
     }
 
     public function sell(Request $request, Record $record): RedirectResponse
@@ -86,24 +99,21 @@ class RecordSaleController extends Controller
         Gate::authorize('update', $record);
         abort_if($record->sold, 422, __('Die Platte ist bereits verkauft.'));
 
-        if (is_string($request->input('sold_price'))) {
-            $request->merge(['sold_price' => str_replace(',', '.', trim($request->input('sold_price')))]);
-        }
+        $soldPrice = $this->price($request, 'sold_price', __('Verkaufspreis'));
         $data = $request->validate([
             'seller_id' => ['required', 'integer'],
-            'sold_price' => ['nullable', 'numeric', 'min:0'],
             'sold_on' => ['required', 'date'],
-        ], [], ['sold_price' => __('Verkaufspreis'), 'sold_on' => __('Verkaufsdatum')]);
+        ], [], ['sold_on' => __('Verkaufsdatum')]);
 
         $interested = $record->sellers()->wherePivotNotNull('interested_at')->get();
         $buyer = $interested->firstWhere('id', (int) $data['seller_id']);
         abort_if($buyer === null, 422, __('Dieser Verkäufer hat kein Interesse angemeldet.'));
 
-        DB::transaction(function () use ($record, $data, $buyer) {
+        DB::transaction(function () use ($record, $data, $buyer, $soldPrice) {
             $record->sold = true;
             $record->selling = false;
             $record->sold_on = $data['sold_on'];
-            $record->sold_price = filled($data['sold_price'] ?? null) ? $data['sold_price'] : null;
+            $record->sold_price = $soldPrice;
             $record->sold_to = $buyer->name;
             $record->sold_to_user_id = $buyer->id;
             $record->save();
@@ -117,6 +127,19 @@ class RecordSaleController extends Controller
         return redirect()->route('records.show', $record)
             ->with('info', __('Die Platte wurde an :name verkauft. Alle Interessenten wurden benachrichtigt.', ['name' => $buyer->name]))
             ->with('warning', $mailFailed ? __('Die Benachrichtigung steht in der App, die E-Mail konnte aber nicht verschickt werden.') : null);
+    }
+
+    /**
+     * An optional price from the form; a decimal comma is accepted. Empty input gives null.
+     */
+    private function price(Request $request, string $field, string $label): ?string
+    {
+        if (is_string($request->input($field))) {
+            $request->merge([$field => str_replace(',', '.', trim($request->input($field)))]);
+        }
+        $value = $request->validate([$field => ['nullable', 'numeric', 'min:0', 'max:99999999']], [], [$field => $label])[$field] ?? null;
+
+        return filled($value) ? (string) $value : null;
     }
 
     /**

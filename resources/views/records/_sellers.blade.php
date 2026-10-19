@@ -1,4 +1,10 @@
-{{-- Owner and admin: sellers the record is assigned to, their interest, and selling to one of them. --}}
+{{-- Owner and admin: sellers the record is assigned to, their interest and offers, and selling to one of them. --}}
+@php
+    $decimal = fn ($value) => $value !== null ? str_replace('.', app()->getLocale() === 'de' ? ',' : '.', $value) : '';
+    // The highest offer is marked when more than one seller made an offer.
+    $offers = $sellers->filter(fn ($seller) => $seller->pivot->interested_at && $seller->pivot->offer_price !== null);
+    $bestOffer = $offers->count() > 1 ? $offers->max(fn ($seller) => (float) $seller->pivot->offer_price) : null;
+@endphp
 <div class="card mb-3 border-warning-subtle">
     <div class="card-header"><i class="bi bi-people"></i> {{ __('Verkäufer & Interesse') }}</div>
     <div class="card-body">
@@ -39,6 +45,16 @@
                         @if ($seller->pivot->interested_at)
                             <span class="badge text-bg-warning"><i class="bi bi-star-fill"></i>
                                 {{ __('Interesse seit :date', ['date' => \App\Support\Format::date($seller->pivot->interested_at)]) }}</span>
+                            @if ($seller->pivot->offer_price !== null)
+                                <span class="badge {{ $bestOffer !== null && (float) $seller->pivot->offer_price === $bestOffer ? 'text-bg-success' : 'text-bg-light border' }}">
+                                    {{ __('bietet :price', ['price' => \App\Support\Format::euro($seller->pivot->offer_price)]) }}
+                                    @if ($bestOffer !== null && (float) $seller->pivot->offer_price === $bestOffer)
+                                        · {{ __('höchstes Gebot') }}
+                                    @endif
+                                </span>
+                            @elseif (! $record->sold)
+                                <span class="small text-body-secondary">{{ __('ohne Preisvorschlag') }}</span>
+                            @endif
                         @else
                             <span class="small text-body-secondary">{{ __('kein Interesse angemeldet') }}</span>
                         @endif
@@ -97,9 +113,10 @@
                                 <label for="sold_price-{{ $seller->id }}" class="form-label">{{ __('Verkaufspreis') }}</label>
                                 <div class="input-group">
                                     <input type="text" inputmode="decimal" name="sold_price" id="sold_price-{{ $seller->id }}" class="form-control"
-                                        value="{{ $record->current_price !== null ? str_replace('.', app()->getLocale() === 'de' ? ',' : '.', $record->current_price) : '' }}">
+                                        value="{{ $decimal($seller->pivot->offer_price ?? $record->current_price) }}">
                                     <span class="input-group-text">€</span>
                                 </div>
+                                <div class="form-text">{{ $seller->pivot->offer_price !== null ? __('Preisvorschlag von :name', ['name' => $seller->name]) : __('Aktueller Preis') }}</div>
                             </div>
                             <div class="col-6">
                                 <label for="sold_on-{{ $seller->id }}" class="form-label">{{ __('Verkaufsdatum') }}</label>

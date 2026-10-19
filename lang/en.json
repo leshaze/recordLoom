@@ -438,5 +438,18 @@
     "„:title“ von :artist wurde an jemand anderen verkauft.": "“:title” by :artist was sold to someone else.",
     "„:title“ wurde an dich verkauft": "“:title” was sold to you",
     "„:title“ wurde an jemand anderen verkauft": "“:title” was sold to someone else",
-    "„Zum Verkauf vormerken“ und die Verkäufer stellst du auf der Seite der Platte unter „Verkäufer & Interesse“ ein.": "“Mark for selling” and the sellers are set on the page of the record under “Sellers & interest”."
+    "„Zum Verkauf vormerken“ und die Verkäufer stellst du auf der Seite der Platte unter „Verkäufer & Interesse“ ein.": "“Mark for selling” and the sellers are set on the page of the record under “Sellers & interest”.",
+    ":seller hat Interesse an „:title“ von :artist angemeldet und bietet :offer.": ":seller is interested in “:title” by :artist and offers :offer.",
+    ":seller bietet jetzt :offer für „:title“ von :artist.": ":seller now offers :offer for “:title” by :artist.",
+    ":seller hat den Preisvorschlag für „:title“ von :artist zurückgenommen.": ":seller withdrew the offer for “:title” by :artist.",
+    "dein Gebot :price": "your offer :price",
+    "Preisvorschlag speichern": "Save offer",
+    "Der Eigentümer sieht deinen Vorschlag. Leer lassen, wenn du keinen Preis nennen möchtest.": "The owner sees your offer. Leave it empty if you don't want to name a price.",
+    "Dein Preisvorschlag": "Your offer",
+    "optional": "optional",
+    "bietet :price": "offers :price",
+    "höchstes Gebot": "highest offer",
+    "ohne Preisvorschlag": "no offer",
+    "Preisvorschlag von :name": "Offer from :name",
+    "Dein Preisvorschlag wurde gespeichert.": "Your offer was saved."
 }

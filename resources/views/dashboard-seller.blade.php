@@ -44,7 +44,11 @@
                                         <span class="badge text-bg-info">{{ __('Verkauf') }}</span>
                                     @endif
                                     @if ($record->sellers->first()?->pivot->interested_at)
-                                        <span class="badge text-bg-warning"><i class="bi bi-star-fill"></i> {{ __('Interesse angemeldet') }}</span>
+                                        <span class="badge text-bg-warning"><i class="bi bi-star-fill"></i> {{ __('Interesse angemeldet') }}
+                                            @if ($record->sellers->first()->pivot->offer_price !== null)
+                                                · {{ __('dein Gebot :price', ['price' => \App\Support\Format::euro($record->sellers->first()->pivot->offer_price)]) }}
+                                            @endif
+                                        </span>
                                     @endif
                                     @if (filled($record->current_price))
                                         <span class="text-nowrap">{{ \App\Support\Format::euro($record->current_price) }}</span>

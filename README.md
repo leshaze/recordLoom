@@ -150,7 +150,7 @@ maintained on their page; without it the German name is shown.
 
 ### Open issues
 
-- tbd
+- Ideas for later: notify all sellers (in the app, optionally by mail) when a record is marked for selling
 
 ## License
 

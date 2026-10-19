@@ -270,3 +270,42 @@ test('unassigning keeps a registered interest, the edit form does not change "fo
         ->assertRedirect(route('records.show', $record));
     expect($record->fresh()->selling)->toBeTrue();
 });
+
+test('sellers can offer a price that the owner sees when choosing the buyer', function () {
+    $owner = User::factory()->create();
+    [$eva, $tom] = User::factory()->seller()->count(2)->sequence(['name' => 'Eva'], ['name' => 'Tom'])->create();
+    $record = ownedRecord($owner, ['selling' => true, 'current_price' => '20']);
+
+    // Eva offers a price with a decimal comma, Tom registers without one.
+    $this->actingAs($eva)->get(route('records.show', $record))->assertSee('Dein Preisvorschlag');
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 1, 'offer_price' => '25,50'])->assertSessionHas('info');
+    $this->actingAs($tom)->post(route('records.interest', $record), ['interested' => 1]);
+
+    $pivot = fn (User $seller) => $record->sellers()->whereKey($seller->id)->first()->pivot;
+    expect($pivot($eva)->offer_price)->toBe('25.50')->and($pivot($tom)->offer_price)->toBeNull();
+    $this->actingAs($eva)->get(route('records.show', $record))->assertSee('value="25,50"', false);
+    $this->actingAs($tom)->post(route('records.interest', $record), ['interested' => 1, 'offer_price' => 'viel'])->assertSessionHasErrors('offer_price');
+    $this->actingAs($tom)->get(route('records.show', $record));
+
+    // Tom offers later; the date of his interest stays and the owner is told about the offer.
+    $since = $pivot($tom)->interested_at;
+    $this->travel(1)->days();
+    $this->actingAs($tom)->post(route('records.interest', $record), ['interested' => 1, 'offer_price' => '30'])
+        ->assertSessionHas('info', 'Dein Preisvorschlag wurde gespeichert.');
+    expect($pivot($tom)->interested_at->equalTo($since))->toBeTrue()->and($pivot($tom)->offer_price)->toBe('30.00');
+    $this->actingAs($owner)->get(route('notifications.index'))
+        ->assertSee('Eva hat Interesse an „Autobahn“ von Kraftwerk angemeldet und bietet 25,50 €.')
+        ->assertSee('Tom bietet jetzt 30,00 € für „Autobahn“ von Kraftwerk.');
+
+    // The owner sees both offers, the highest marked, and the sale dialog starts with the offer.
+    $this->actingAs($owner)->get(route('records.show', $record))
+        ->assertSee('bietet 25,50 €')->assertSee('bietet 30,00 €')->assertSee('höchstes Gebot')
+        ->assertSee('value="30,00"', false)->assertSee('Preisvorschlag von Tom');
+
+    // Withdrawing clears the offer.
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 0]);
+    expect($record->sellers()->whereKey($eva->id)->exists())->toBeFalse();
+
+    // Sellers do not see the offers of others.
+    $this->actingAs($tom)->get(route('records.show', $record))->assertDontSee('25,50');
+});
