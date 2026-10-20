@@ -485,3 +485,14 @@ test('covers with huge dimensions are refused', function () {
         'cover' => UploadedFile::fake()->image('riesig.png', 9000, 10),
     ])->assertSessionHasErrors('cover');
 });
+
+test('the lists of artists and labels show the interest like the record list', function () {
+    $owner = User::factory()->create();
+    $eva = User::factory()->seller()->create();
+    $record = ownedRecord($owner, ['selling' => true]);
+    $this->actingAs($eva)->post(route('records.interest', $record), ['interested' => 1]);
+
+    foreach ([route('records.index'), route('artists.show', $record->artist_id), route('labels.show', $record->label_id)] as $url) {
+        $this->actingAs($owner)->get($url)->assertSee('1 Interessent');
+    }
+});

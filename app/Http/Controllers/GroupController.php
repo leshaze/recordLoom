@@ -77,7 +77,7 @@ abstract class GroupController extends Controller
 
         return view('groups.details', [
             'item' => $item,
-            'records' => $filter->query()->with(RecordController::LIST_RELATIONS)->paginate($filter->values['per_page'])->withQueryString(),
+            'records' => RecordController::forList($filter->query(), $request->user())->paginate($filter->values['per_page'])->withQueryString(),
             'filter' => $filter,
             'canChange' => $this->canChange($request, $item),
             'recordCount' => $item->records()->visibleTo($request->user())->count(),

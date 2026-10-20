@@ -31,16 +31,23 @@ class RecordController extends Controller
      */
     public const LIST_RELATIONS = ['artist', 'label', 'country', 'editions'];
 
+    /**
+     * Relations and interest for the record lists (all records, artist, label, platform): sellers see their own
+     * interest, owners the number of interested sellers.
+     */
+    public static function forList(Builder $query, User $user): Builder
+    {
+        return $query->with(self::LIST_RELATIONS)
+            ->when($user->isSeller(), fn (Builder $query) => $query->with(['sellers' => fn ($query) => $query->whereKey($user->id)]))
+            ->when(! $user->isSeller(), fn (Builder $query) => $query->withCount(['sellers as interested_count' => fn ($query) => $query->whereNotNull('record_seller.interested_at')]));
+    }
+
     public function index(Request $request)
     {
         $filter = new RecordFilter($request);
         $filter->remember($request);
         $user = $request->user();
-        $records = $filter->query()
-            ->with(self::LIST_RELATIONS)
-            // Sellers see their own interest, owners the number of interested sellers.
-            ->when($user->isSeller(), fn (Builder $query) => $query->with(['sellers' => fn ($query) => $query->whereKey($user->id)]))
-            ->when(! $user->isSeller(), fn (Builder $query) => $query->withCount(['sellers as interested_count' => fn ($query) => $query->whereNotNull('record_seller.interested_at')]))
+        $records = self::forList($filter->query(), $user)
             ->paginate($filter->values['per_page'])
             ->withQueryString();
 
